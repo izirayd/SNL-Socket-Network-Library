@@ -1,5 +1,5 @@
 /*
-   By Izilel (c) 2017
+   By Сергей Щербаков
 */
 
 #pragma once
