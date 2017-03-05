@@ -1,5 +1,5 @@
 /*
-By Izilel (c) 2017
+  Socket std 2017
 */
 
 #pragma once
@@ -365,7 +365,7 @@ namespace std {
 
 		void CreateAddress(std::base_socket::socket_address_in &address, std::base_socket::address_families family, std::ipv4 ip, int32_t port) { address.sin_family = static_cast<decltype(address.sin_family)>(family); address.sin_addr.s_addr = inet_addr(ip); address.sin_port = htons(port); }
 
-		std::size_t bind(std::socket_t socket, std::base_socket::socket_address_in address) {
+		int32_t bind(std::socket_t socket, std::base_socket::socket_address_in address) {
 			return ::bind(socket, (sockaddr*)&address, sizeof(address));
 		}
 
@@ -373,7 +373,7 @@ namespace std {
 			return ::socket(static_cast<int>(address), static_cast<int>(type_protocol), static_cast<int>(ipproto));
 		}
 
-		std::size_t listen(std::socket_t socket, int32_t count) {
+		int32_t listen(std::socket_t socket, int32_t count) {
 			return ::listen(static_cast<int>(socket), count);
 		}
 
@@ -381,43 +381,66 @@ namespace std {
 			return ::accept(static_cast<int>(socket), (struct sockaddr*)&address, &len);
 		}
 
-		std::size_t recv(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags) {
+		int32_t recv(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags) {
 			return ::recv(static_cast<int>(socket), static_cast<char *>(Data), static_cast<int>(SizePacket), Flags);
 		}
 
-		std::size_t send(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags) {
+		int32_t send(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags) {
 			return ::send(static_cast<int>(socket), static_cast<char *>(Data), static_cast<int>(SizePacket), Flags);
 		}
 
-		std::size_t connect(std::socket_t socket, std::base_socket::socket_address_in &address, std::base_socket::socket_address_len &len) {
+		int32_t connect(std::socket_t socket, std::base_socket::socket_address_in &address, std::base_socket::socket_address_len &len) {
 			return ::connect(static_cast<int>(socket), (struct sockaddr*)&address, len);
 		}
 
-		std::size_t connect(std::socket_t socket, std::ipv4 ip, int32_t port) {
+		int32_t connect(std::socket_t socket, std::ipv4 ip, int32_t port) {
 			std::base_socket::socket_address_in  address;
 			std::base_socket::socket_address_len lenAddress = sizeof(address);
 			std::base_socket::CreateAddress(address, std::base_socket::address_families::inet, ip, port);
 			return std::base_socket::connect(socket, address, lenAddress);
 		}
 
-		std::size_t connect(std::socket_t socket, std::ipv4 ip, int32_t port, std::base_socket::address_families family) {
+		int32_t connect(std::socket_t socket, std::ipv4 ip, int32_t port, std::base_socket::address_families family) {
 			std::base_socket::socket_address_in  address;
 			std::base_socket::socket_address_len lenAddress = sizeof(address);
 			std::base_socket::CreateAddress(address, family, ip, port);
 			return std::base_socket::connect(socket, address, lenAddress);
 		}
 
-		std::size_t getsockopt(std::socket_t socket, int32_t Level, int32_t Option, std::base_socket::byte_t *Value, socket_len_t &lenValue) {
+		int32_t getsockopt(std::socket_t socket, int32_t Level, int32_t Option, std::base_socket::byte_t *Value, socket_len_t &lenValue) {
 			return ::getsockopt(static_cast<int>(socket), static_cast<int>(Level), static_cast<int>(Option), Value, &lenValue);
 		}
 
-		std::size_t setsockopt(std::socket_t socket, int32_t Level, int32_t Option, std::base_socket::byte_t *Value, int32_t lenValue) {
+		int32_t setsockopt(std::socket_t socket, int32_t Level, int32_t Option, std::base_socket::byte_t *Value, int32_t lenValue) {
 			return ::setsockopt(static_cast<int>(socket), static_cast<int>(Level), static_cast<int>(Option), Value, static_cast<int>(lenValue));
 		}
 
-		std::size_t reuseaddr(std::socket_t socket) {
+		int32_t reuseaddr(std::socket_t socket) {
 			int32_t optval = -1;
 			return base_socket::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (std::base_socket::byte_t*) &optval, sizeof(optval));
+		}
+
+		int32_t sendto(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags, std::base_socket::socket_address_in &address, std::base_socket::socket_address_len &len)
+		{
+			return ::sendto(socket, Data, SizePacket, Flags, (struct sockaddr*)&address, len);
+		}
+
+		int32_t sendto(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags, std::ipv4 ip, int32_t port, std::base_socket::address_families family)
+		{
+			std::base_socket::socket_address_in  address;
+			std::base_socket::socket_address_len len = sizeof(address);
+			std::base_socket::CreateAddress(address, family, ip, port);
+			return ::sendto(socket, Data, SizePacket, Flags, (struct sockaddr*)&address, len);
+		}
+
+		int32_t send(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags, std::base_socket::socket_address_in &address, std::base_socket::socket_address_len &len)
+		{
+			return sendto(socket, Data, SizePacket, Flags, address, len);
+		}
+
+		int32_t recvfrom(std::socket_t socket, std::base_socket::byte_t *Data, std::size_t SizePacket, int32_t Flags, std::base_socket::socket_address_in &address, std::base_socket::socket_address_len &len)
+		{
+			return ::recvfrom(socket, Data, SizePacket, Flags, (struct sockaddr*)&address, &len);
 		}
 	}
 }
@@ -557,8 +580,8 @@ namespace std {
 	template <typename T>
 	struct table_function_t
 	{
-		std::string Name;
-		T Function;
+		std::string Name = "";
+		T Function = nullptr;
 	};
 
 	template <typename T>
@@ -570,11 +593,13 @@ namespace std {
 				return;
 
 			max = _count;
+
 			function_obj = new table_function_t<T>[max];
 		}
 
 		~list_table_function_t()
 		{
+
 			if (function_obj != nullptr)
 				delete[] function_obj;
 		}
@@ -588,6 +613,7 @@ namespace std {
 
 			if (function_obj != nullptr)
 				delete[] function_obj;
+
 
 			function_obj = new table_function_t<T>[max];
 		}
@@ -658,6 +684,9 @@ namespace std {
 			return *this;
 		}
 
+		void RunForBasePacket(std::string Name, std::socket_t SocketFrom, std::server server, std::client client, std::base_socket::byte_t *Data, uint32_t SizeBuffer);
+
+
 		void Add(std::string Name, function_socket_byte_t func) { function_socket_byte.AddFunction(Name, func); }
 		void Add(std::string Name, function_client_byte_t func) { function_client_byte.AddFunction(Name, func); }
 		void Add(std::string Name, function_server_byte_t func) { function_server_byte.AddFunction(Name, func); }
@@ -705,7 +734,8 @@ namespace std {
 	enum class arch_server_t
 	{
 		unknow = 0,
-		tcp_thread
+		tcp_thread,
+		udp_thread
 	};
 
 	enum class type_blocked_t
@@ -736,6 +766,8 @@ namespace std {
 		SocketBase& operator = (const std::base_socket::socket_address_in _address) { address = _address; InitAddr();  return *this; }
 		SocketBase& operator = (const ipv4 _ip) { ip = _ip; return *this; }
 		SocketBase& operator = (const std::socket_t _socket) { socket = _socket; return *this; }
+
+		uint32_t SizeRead = 2048;
 
 		bool isRun = true;
 		std::socket_t socket = -1;
@@ -817,7 +849,7 @@ namespace std {
 				return status_t::error_create_socket;
 
 			std::base_socket::CreateAddress(address, family, ipServer, portServer);
-			std::size_t status = std::base_socket::bind(socket, address);
+			int32_t status = std::base_socket::bind(socket, address);
 
 			if (status == socket_error)
 				return status_t::error_bind_socket;
@@ -833,7 +865,7 @@ namespace std {
 				if (status != status_t::success)
 					return status;
 
-				std::size_t statuslisten = std::base_socket::listen(socket, 5);
+				int32_t statuslisten = std::base_socket::listen(socket, 5);
 
 				if (statuslisten == socket_error)
 					return status_t::error_listen_socket;
@@ -870,30 +902,31 @@ namespace std {
 
 			if (arch == arch_server_t::tcp_thread)
 			{
-				bool isNewAllocate = true;
-				SocketBase *client;
+				
+				SocketBase *server = new SocketBase(0);
+				server->address    = this->address;
+				server->socket     = this->socket;
+				server->arch       = this->arch;
+
 				while (true)
 				{
-					if (isNewAllocate)
-					{
-						client        = new SocketBase(0);
-						client->lenAddress = sizeof(client->address);
-						isNewAllocate = false;
-					}
+					SocketBase *client = new SocketBase(0);
+					client->lenAddress = sizeof(client->address);
 
 					client->socket = std::base_socket::accept(socket, client->address, client->lenAddress);
 				
 					if (client->socket == socket_error)
 					{
-						isNewAllocate = false;
+						delete[] client;
 						continue;						
 					}
 
-					std::thread   threadclient(&SocketBase::ReadPacket, this, client->socket, client, this);
+					std::thread   threadclient(&SocketBase::ReadPacket, this, client->socket, client, server);
 					threadclient.detach();
 
-					isNewAllocate = true;
 				}
+
+				delete[] server;
 
 				return status_t::success;
 			}
@@ -921,7 +954,7 @@ namespace std {
 				return status_t::error_create_socket;
 
 			std::base_socket::CreateAddress(address, family, ipServer, portServer);
-			std::size_t
+			int32_t
 				status = std::base_socket::connect(socket, address, lenAddress);
 
 			if (status == socket_error)
@@ -966,7 +999,7 @@ namespace std {
 		status_t Send(std::base_socket::byte_t *Packet, std::size_t SizePacket)
 		{
 			memcopy(PacketBuffer, Packet, SizePacket);
-			std::size_t status = std::base_socket::send(socket, PacketBuffer, SizePacket, 0);
+			int32_t status = std::base_socket::send(socket, PacketBuffer, SizePacket, 0);
 			if (status == socket_error) return status_t::error_no_send;
 			return status_t::success;
 		}
@@ -1026,10 +1059,15 @@ namespace std {
 			{
 				// Стоит учесть что 0, это количество аллоциеруемых таблиц
 				SocketBase *client = new SocketBase(0);
+				SocketBase *server = new SocketBase(0);
 
-				client = this; 
+				client->address = this->address; 
+				server->address = this->address;
 
-				std::thread threadclient(&SocketBase::ReadPacket, this, socket, client, this);
+				client->socket = this->socket;
+
+
+				std::thread threadclient(&SocketBase::ReadPacket, this, socket, client, server);
 				threadclient.detach();
 
 				return status_t::success;
@@ -1154,46 +1192,67 @@ namespace std {
 
 	void SocketBase::ReadPacket(std::socket_t SocketFrom, SocketBase *socket_base, SocketBase *socket_base_server)
 	{
-		if (socket_base == nullptr || SocketFrom == -1)
+		if (socket_base == nullptr || socket_base_server == nullptr || SocketFrom == -1)
 			return;
 
 		socket_base->InitAddr();
+		socket_base_server->InitAddr();
+
 		std::client client(0, 0);
+		std::server server(0, 0);
+
 		client = socket_base;
+		server = socket_base_server;
 
 		if (client.socket == socket_error)
 			return;
 
-		std::base_socket::byte_t *Data = new std::base_socket::byte_t[2048];
+		if (SizeRead == 0)
+			return;
+
+		std::base_socket::byte_t *Data = new std::base_socket::byte_t[SizeRead];
+
+		if (Data == nullptr)		{
+			printf("\nIn socket library cannot alloc memory for new client.");
+			std::base_socket::close(SocketFrom);
+			return;
+		}
+
+		TableRunFunction.RunForBasePacket("new", SocketFrom, server, client, nullptr, 0);
+
 		while (true) {
-			std::size_t StatusPacket = std::base_socket::recv(SocketFrom, Data, 2048, 0);
+			int32_t StatusPacket = std::base_socket::recv(SocketFrom, Data, SizeRead, 0);
 
-			if (StatusPacket > 0)
-			{
-				//TableRunFunction.RunFunction("read", SocketFrom, Data);
-				if (!TableRunFunction.Run("read", SocketFrom, Data))
-					if (!TableRunFunction.Run("read", SocketFrom, Data, StatusPacket))
-						if (!TableRunFunction.Run("read", client, Data))
-							if (!TableRunFunction.Run("read", client, Data, StatusPacket))
-							{
-
-							}
-
-
-			}
+			if (StatusPacket > 0)		
+				TableRunFunction.RunForBasePacket("read", SocketFrom, server, client, Data, StatusPacket);
 
 			if (!isRun)
 			{
+				TableRunFunction.RunForBasePacket("closeserver", SocketFrom, server, client, nullptr, 0);
 				break;
 			}
 
 			if (StatusPacket < 0)
 			{
-				//TableRunFunction.RunFunction("end", SocketFrom, Data);
+				TableRunFunction.RunForBasePacket("end", SocketFrom, server, client, nullptr, 0);
 				break;
 			}
 		}
-		delete[] socket_base;
+		delete socket_base;
+		socket_base = nullptr;
+		
 		delete[] Data;
+		Data = nullptr;
+	}
+	void TableFunction::RunForBasePacket(std::string Name, std::socket_t SocketFrom, std::server server, std::client client, std::base_socket::byte_t *Data, uint32_t SizeBuffer)
+	{
+		if (!Run(Name, SocketFrom, Data))
+			if (!Run(Name, SocketFrom, Data, SizeBuffer))
+				if (!Run(Name, client, Data))
+					if (!Run(Name, client, Data, SizeBuffer))
+						if (!Run(Name, server, Data))
+							if (!Run(Name, server, Data, SizeBuffer))
+								if (!Run(Name, server, client, Data))
+									  Run(Name, server, client, Data, SizeBuffer);
 	}
 }
