@@ -620,7 +620,7 @@ namespace std {
 			return nullptr;
 		}
 
-		table_function_t<T> *function_obj;
+		table_function_t<T> *function_obj = nullptr;
 	};
 
 	struct table_function_socket_byte_t
@@ -634,19 +634,28 @@ namespace std {
 	class TableFunction
 	{
 	public:
-		TableFunction()
-		{
-
+		TableFunction() {
+			this->operator=(32);
 		}
 
-		TableFunction(int CountFunction)
-		{
-
+		TableFunction(uint32_t CountFunction) {
+			this->operator=(CountFunction);
 		}
 
-		~TableFunction()
-		{
+		~TableFunction() = default;
 
+		TableFunction& operator = (const uint32_t ReCreateCount) {
+
+			function_socket_byte.recreate(ReCreateCount);
+			function_client_byte.recreate(ReCreateCount);
+			function_server_byte.recreate(ReCreateCount);
+			function_server_client_byte.recreate(ReCreateCount);
+			function_socket_byte_uint32.recreate(ReCreateCount);
+			function_client_byte_uint32.recreate(ReCreateCount);
+			function_server_byte_uint32.recreate(ReCreateCount);
+			function_server_client_byte_uint32.recreate(ReCreateCount);
+
+			return *this;
 		}
 
 		void Add(std::string Name, function_socket_byte_t func) { function_socket_byte.AddFunction(Name, func); }
@@ -668,15 +677,15 @@ namespace std {
 		bool Run(std::string Name, std::server   server, std::base_socket::byte_t *Buffer, uint32_t SizePacket);
 		bool Run(std::string Name, std::server   server, std::client client, std::base_socket::byte_t *Buffer, uint32_t SizePacket);
 
-		list_table_function_t<function_socket_byte_t>        function_socket_byte = 5;
-		list_table_function_t<function_client_byte_t>        function_client_byte = 5;
-		list_table_function_t<function_server_byte_t>        function_server_byte = 5;
-		list_table_function_t<function_server_client_byte_t> function_server_client_byte = 5;
+		list_table_function_t<function_socket_byte_t>        function_socket_byte = 0;
+		list_table_function_t<function_client_byte_t>        function_client_byte = 0;
+		list_table_function_t<function_server_byte_t>        function_server_byte = 0;
+		list_table_function_t<function_server_client_byte_t> function_server_client_byte = 0;
 
-		list_table_function_t<function_socket_byte_uint32_t> function_socket_byte_uint32 = 5;
-		list_table_function_t<function_client_byte_uint32_t> function_client_byte_uint32 = 5;
-		list_table_function_t<function_server_byte_uint32_t> function_server_byte_uint32 = 5;
-		list_table_function_t<function_server_client_byte_uint32_t> function_server_client_byte_uint32 = 5;
+		list_table_function_t<function_socket_byte_uint32_t> function_socket_byte_uint32 = 0;
+		list_table_function_t<function_client_byte_uint32_t> function_client_byte_uint32 = 0;
+		list_table_function_t<function_server_byte_uint32_t> function_server_byte_uint32 = 0;
+		list_table_function_t<function_server_client_byte_uint32_t> function_server_client_byte_uint32 = 0;
 
 	};
 
@@ -695,6 +704,7 @@ namespace std {
 
 	enum class arch_server_t
 	{
+		unknow = 0,
 		tcp_thread
 	};
 
@@ -707,7 +717,15 @@ namespace std {
 	class SocketBase
 	{
 	public:
-		SocketBase() = default;
+		SocketBase() {
+			TableRunFunction = 32;
+		}
+
+		SocketBase(uint32_t CountFunction)
+		{
+			TableRunFunction = CountFunction;
+		}
+
 		~SocketBase() = default;
 
 		void ReadPacket(std::socket_t SocketFrom, SocketBase *socket_base_client, SocketBase *socket_base_server);
@@ -721,19 +739,28 @@ namespace std {
 
 		bool isRun = true;
 		std::socket_t socket = -1;
-		std::ipv4     ip;
-		int32_t       port;
+		std::ipv4     ip = "0.0.0.0";
+		int32_t       port   = -1;
 		std::base_socket::socket_address_in  address;
-		std::base_socket::socket_address_len lenAddress;
-		arch_server_t arch;
-		TableFunction TableRunFunction;
-		char SelectFunction[32];
+		std::base_socket::socket_address_len lenAddress = 0;
+		arch_server_t arch = arch_server_t::unknow;
+		TableFunction TableRunFunction = 0;
+		char SelectFunction[32] = { 0 };
 	};
 
 	class server : public SocketBase
 	{
 	public:
-		server() = default;
+
+		server() : SizePacketBuffer(1440), SocketBase(32) {
+	
+		}
+
+		server(std::size_t _SizePacketBuffer, uint32_t CountFunction = 32) : SizePacketBuffer(_SizePacketBuffer), SocketBase(CountFunction) {
+		
+		}
+
+		std::size_t SizePacketBuffer = 0;
 
 		server &operator[]  (const char *NameFunction)
 		{
@@ -843,12 +870,29 @@ namespace std {
 
 			if (arch == arch_server_t::tcp_thread)
 			{
+				bool isNewAllocate = true;
+				SocketBase *client;
 				while (true)
 				{
-					SocketBase *client = new SocketBase;
+					if (isNewAllocate)
+					{
+						client        = new SocketBase(0);
+						client->lenAddress = sizeof(client->address);
+						isNewAllocate = false;
+					}
+
 					client->socket = std::base_socket::accept(socket, client->address, client->lenAddress);
+				
+					if (client->socket == socket_error)
+					{
+						isNewAllocate = false;
+						continue;						
+					}
+
 					std::thread   threadclient(&SocketBase::ReadPacket, this, client->socket, client, this);
 					threadclient.detach();
+
+					isNewAllocate = true;
 				}
 
 				return status_t::success;
@@ -861,12 +905,13 @@ namespace std {
 	class client : public SocketBase
 	{
 	public:
-		client() : SizePacketBuffer(1400) {
+		client() : SizePacketBuffer(1440), SocketBase(32) {
 			CreatePacketBuffer(SizePacketBuffer);
 		}
-		client(std::size_t _SizePacketBuffer) : SizePacketBuffer(_SizePacketBuffer) {
+		client(std::size_t _SizePacketBuffer, uint32_t CountFunction = 32) : SizePacketBuffer(_SizePacketBuffer), SocketBase(CountFunction) {		
 			CreatePacketBuffer(SizePacketBuffer);
 		}
+
 		status_t Connect(std::ipv4 ipServer, int32_t portServer, std::base_socket::address_families family, std::base_socket::type_protocol type, std::base_socket::ipproto ipproto)
 		{
 			lenAddress = sizeof(address);
@@ -979,10 +1024,10 @@ namespace std {
 
 			if (arch == arch_server_t::tcp_thread)
 			{
-				SocketBase *client = new SocketBase;
+				// Стоит учесть что 0, это количество аллоциеруемых таблиц
+				SocketBase *client = new SocketBase(0);
 
-				client->address = this->address;
-				client->socket = this->socket;
+				client = this; 
 
 				std::thread threadclient(&SocketBase::ReadPacket, this, socket, client, this);
 				threadclient.detach();
@@ -994,7 +1039,7 @@ namespace std {
 		}
 		std::base_socket::byte_t *PacketBuffer = nullptr;
 		void CreatePacketBuffer(std::size_t Size) {
-			if (PacketBuffer == nullptr)
+			if (PacketBuffer == nullptr && Size > 0)
 				PacketBuffer = new std::base_socket::byte_t[Size];
 		}
 		void DeletePacketBuffer() {
@@ -1109,11 +1154,11 @@ namespace std {
 
 	void SocketBase::ReadPacket(std::socket_t SocketFrom, SocketBase *socket_base, SocketBase *socket_base_server)
 	{
-		if (socket_base == nullptr)
+		if (socket_base == nullptr || SocketFrom == -1)
 			return;
 
 		socket_base->InitAddr();
-		std::client client;
+		std::client client(0, 0);
 		client = socket_base;
 
 		if (client.socket == socket_error)
