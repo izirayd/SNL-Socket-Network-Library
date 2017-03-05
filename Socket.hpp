@@ -1,5 +1,5 @@
 /*
-   By Сергей Щербаков
+By Izilel (c) 2017
 */
 
 #pragma once
@@ -242,7 +242,29 @@ namespace std {
 #define socket_error SO_ERROR
 #endif
 
+		enum  class shutdown_t
+		{
+#if defined(PLATFORM_WINDOWS)
+			rd = SD_RECEIVE,
+			wr = SD_SEND,
+			rdwr = SD_BOTH
+#endif
+#if defined(PLATFORM_LINUX)
+			rd = SHUT_RD,
+			wr = SHUT_WR,
+			rdwr = SHUT_RDWR
+#endif
+		};
+
+		int32_t shutdown(std::socket_t socket, shutdown_t sd_option = shutdown_t::rdwr)
+		{
+			return ::shutdown(socket, static_cast<int32_t>(sd_option));
+		}
+
 		int32_t close(std::socket_t socket) {
+
+			base_socket::shutdown(socket);
+
 #if defined(PLATFORM_WINDOWS)
 			return ::closesocket(socket);
 #endif
@@ -274,7 +296,7 @@ namespace std {
 			nd = IPPROTO_ND,
 #endif
 #if defined(PLATFORM_LINUX)
-			ggp  = IPPROTO_EGP,
+			ggp = IPPROTO_EGP,
 			sctp = IPPROTO_SCTP,
 #if !defined(__ICC) || !defined(__INTEL_COMPILER)
 			//nd = IPPROTO_MH,
@@ -391,6 +413,11 @@ namespace std {
 
 		std::size_t setsockopt(std::socket_t socket, int32_t Level, int32_t Option, std::base_socket::byte_t *Value, int32_t lenValue) {
 			return ::setsockopt(static_cast<int>(socket), static_cast<int>(Level), static_cast<int>(Option), Value, static_cast<int>(lenValue));
+		}
+
+		std::size_t reuseaddr(std::socket_t socket) {
+			int32_t optval = -1;
+			return base_socket::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (std::base_socket::byte_t*) &optval, sizeof(optval));
 		}
 	}
 }
@@ -509,9 +536,92 @@ namespace std
 }
 #endif
 
+
+
 namespace std {
 
+	class client;
+	class server;
+
 	typedef void(*function_socket_byte_t)(std::socket_t, std::base_socket::byte_t *);
+	typedef void(*function_client_byte_t)(std::client, std::base_socket::byte_t   *);
+	typedef void(*function_server_byte_t)(std::server, std::base_socket::byte_t   *);
+	typedef void(*function_server_client_byte_t)(std::server, std::client, std::base_socket::byte_t *);
+
+	typedef void(*function_socket_byte_uint32_t)(std::socket_t, std::base_socket::byte_t *, uint32_t);
+	typedef void(*function_client_byte_uint32_t)(std::client, std::base_socket::byte_t   *, uint32_t);
+	typedef void(*function_server_byte_uint32_t)(std::server, std::base_socket::byte_t   *, uint32_t);
+	typedef void(*function_server_client_byte_uint32_t)(std::server, std::client, std::base_socket::byte_t *, uint32_t);
+
+
+	template <typename T>
+	struct table_function_t
+	{
+		std::string Name;
+		T Function;
+	};
+
+	template <typename T>
+	struct list_table_function_t
+	{
+		list_table_function_t(uint32_t _count)
+		{
+			if (_count == 0)
+				return;
+
+			max = _count;
+			function_obj = new table_function_t<T>[max];
+		}
+
+		~list_table_function_t()
+		{
+			if (function_obj != nullptr)
+				delete[] function_obj;
+		}
+
+		void recreate(uint32_t _count)
+		{
+			if (_count == 0)
+				return;
+
+			max = _count;
+
+			if (function_obj != nullptr)
+				delete[] function_obj;
+
+			function_obj = new table_function_t<T>[max];
+		}
+
+		uint32_t GetCount() { return count; }
+		uint32_t GetMax() { return max; }
+
+		uint32_t count = 0;
+		uint32_t max = 0;
+
+		void AddFunction(std::string Name, T Func) {
+
+			if (GetCount() + 1 > GetMax()) return;
+
+			function_obj[count].Name = Name;
+			function_obj[count].Function = Func;
+
+			count++;
+		}
+
+		T *GetFunction(uint32_t index) {
+			if (index > max) return nullptr; function_obj[index];
+		}
+
+		T *GetFunction(std::string name) {
+			for (uint32_t i = 0; i < count; i++)
+				if (function_obj[i].Name == name)
+					return &function_obj[i].Function;
+
+			return nullptr;
+		}
+
+		table_function_t<T> *function_obj;
+	};
 
 	struct table_function_socket_byte_t
 	{
@@ -519,65 +629,55 @@ namespace std {
 		function_socket_byte_t
 			Function;
 	};
+
+
 	class TableFunction
 	{
-
 	public:
 		TableFunction()
 		{
-			ReCreateTB(32);
+
 		}
-			
+
 		TableFunction(int CountFunction)
 		{
-			ReCreateTB(CountFunction);
+
 		}
+
 		~TableFunction()
 		{
-			if (TBSockBuffer != nullptr) delete[] TBSockBuffer;
-		}
-		void ReCreateTB(int SizeTB)
-		{
-			ClearCount();
-			CountMaxFunction = SizeTB;
 
-			if (TBSockBuffer == nullptr)		
-				TBSockBuffer = new table_function_socket_byte_t[SizeTB];		
-			else
-			{ 
-				delete[] TBSockBuffer;
-				TBSockBuffer = new table_function_socket_byte_t[SizeTB];
-			}
-		}
-		void ClearCount()
-		{
-			CountTBSockBuffer = 0;
-		}
-		bool AddFunction(char *Name, function_socket_byte_t Function)
-		{
-			if (CountTBSockBuffer < this->CountMaxFunction) {
-				TBSockBuffer[CountTBSockBuffer].Function = Function;
-				strcpy(TBSockBuffer[CountTBSockBuffer].Name, Name);
-				CountTBSockBuffer++;
-				return true;
-			}
-
-			return false;
-		}
-		bool RunFunction(char    *Name, std::socket_t Socket, std::base_socket::byte_t *Buffer)
-		{
-			if (CountTBSockBuffer > 0)
-				for (int i = 0; i < CountTBSockBuffer; i++)
-					if (strcmp(TBSockBuffer[i].Name, Name) == 0) {
-						((*TBSockBuffer[i].Function)(Socket, Buffer));
-						return true;
-					}
-			return false;
 		}
 
-		table_function_socket_byte_t  *TBSockBuffer = nullptr;  
-		int32_t CountTBSockBuffer = 0;
-		int32_t CountMaxFunction = 0;
+		void Add(std::string Name, function_socket_byte_t func) { function_socket_byte.AddFunction(Name, func); }
+		void Add(std::string Name, function_client_byte_t func) { function_client_byte.AddFunction(Name, func); }
+		void Add(std::string Name, function_server_byte_t func) { function_server_byte.AddFunction(Name, func); }
+		void Add(std::string Name, function_server_client_byte_t func) { function_server_client_byte.AddFunction(Name, func); }
+		void Add(std::string Name, function_socket_byte_uint32_t func) { function_socket_byte_uint32.AddFunction(Name, func); }
+		void Add(std::string Name, function_client_byte_uint32_t func) { function_client_byte_uint32.AddFunction(Name, func); }
+		void Add(std::string Name, function_server_byte_uint32_t func) { function_server_byte_uint32.AddFunction(Name, func); }
+		void Add(std::string Name, function_server_client_byte_uint32_t func) { function_server_client_byte_uint32.AddFunction(Name, func); }
+
+		bool Run(std::string Name, std::socket_t socket, std::base_socket::byte_t *Buffer);
+		bool Run(std::string Name, std::client   client, std::base_socket::byte_t *Buffer);
+		bool Run(std::string Name, std::server   server, std::base_socket::byte_t *Buffer);
+		bool Run(std::string Name, std::server   server, std::client client, std::base_socket::byte_t *Buffer);
+
+		bool Run(std::string Name, std::socket_t socket, std::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(std::string Name, std::client   client, std::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(std::string Name, std::server   server, std::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(std::string Name, std::server   server, std::client client, std::base_socket::byte_t *Buffer, uint32_t SizePacket);
+
+		list_table_function_t<function_socket_byte_t>        function_socket_byte = 5;
+		list_table_function_t<function_client_byte_t>        function_client_byte = 5;
+		list_table_function_t<function_server_byte_t>        function_server_byte = 5;
+		list_table_function_t<function_server_client_byte_t> function_server_client_byte = 5;
+
+		list_table_function_t<function_socket_byte_uint32_t> function_socket_byte_uint32 = 5;
+		list_table_function_t<function_client_byte_uint32_t> function_client_byte_uint32 = 5;
+		list_table_function_t<function_server_byte_uint32_t> function_server_byte_uint32 = 5;
+		list_table_function_t<function_server_client_byte_uint32_t> function_server_client_byte_uint32 = 5;
+
 	};
 
 	enum class status_t {
@@ -610,37 +710,17 @@ namespace std {
 		SocketBase() = default;
 		~SocketBase() = default;
 
-		void ReadPacket(std::socket_t SocketFrom)
-		{
-			std::base_socket::byte_t *Data = new std::base_socket::byte_t[2048];
-			while (true) {
-				std::size_t StatusPacket = std::base_socket::recv(SocketFrom, Data, 2048, 0);
+		void ReadPacket(std::socket_t SocketFrom, SocketBase *socket_base_client, SocketBase *socket_base_server);
 
-				if (StatusPacket > 0)
-				{
-					TableRunFunction.RunFunction("Base", SocketFrom, Data);
-					//printf("%s\n", Data);
-				}
-				if (StatusPacket < 0) break;
-			}
-			delete[] Data;
-		}
+		void Close() { isRun = false;  std::base_socket::close(socket); }
+		void InitAddr() { ip = inet_ntoa(address.sin_addr); port = (int)ntohs(address.sin_port); lenAddress = sizeof(address); }
 
-		void Close() { std::base_socket::close(socket); }
+		SocketBase& operator = (const std::base_socket::socket_address_in _address) { address = _address; InitAddr();  return *this; }
+		SocketBase& operator = (const ipv4 _ip) { ip = _ip; return *this; }
+		SocketBase& operator = (const std::socket_t _socket) { socket = _socket; return *this; }
 
-		SocketBase &operator[]  (const char *NameFunction)
-		{
-			strcpy(SelectFunction, NameFunction);
-			return *this;
-		}
-
-		SocketBase& operator = (function_socket_byte_t Func)
-		{
-			TableRunFunction.AddFunction(SelectFunction, Func);
-			return *this;
-		}
-
-		std::socket_t socket;
+		bool isRun = true;
+		std::socket_t socket = -1;
 		std::ipv4     ip;
 		int32_t       port;
 		std::base_socket::socket_address_in  address;
@@ -654,6 +734,53 @@ namespace std {
 	{
 	public:
 		server() = default;
+
+		server &operator[]  (const char *NameFunction)
+		{
+			strcpy(SelectFunction, NameFunction);
+			return *this;
+		}
+
+		server& operator = (const function_socket_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_client_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_client_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_socket_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_client_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_client_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+
+		server& operator = (const SocketBase SB) {
+
+			this->address = SB.address;
+			this->arch = SB.arch;
+			this->socket = SB.socket;
+			this->ip = SB.ip;
+			this->socket = SB.socket;
+			this->isRun = SB.isRun;
+			this->lenAddress = SB.lenAddress;
+			this->port = SB.port;
+			this->TableRunFunction = SB.TableRunFunction;
+
+			return *this;
+		}
+
+		server& operator = (const SocketBase *SB) {
+
+			this->address = SB->address;
+			this->arch = SB->arch;
+			this->socket = SB->socket;
+			this->ip = SB->ip;
+			this->socket = SB->socket;
+			this->isRun = SB->isRun;
+			this->lenAddress = SB->lenAddress;
+			this->port = SB->port;
+			this->TableRunFunction = SB->TableRunFunction;
+
+			return *this;
+		}
+
+
 		status_t Create(std::ipv4 ipServer, int32_t portServer, std::base_socket::address_families family, std::base_socket::type_protocol type, std::base_socket::ipproto ipproto)
 		{
 			lenAddress = sizeof(address);
@@ -716,9 +843,11 @@ namespace std {
 
 			if (arch == arch_server_t::tcp_thread)
 			{
-				while (true) {
-					std::socket_t SocketClient = std::base_socket::accept(socket, address, lenAddress);
-					std::thread   threadclient(&SocketBase::ReadPacket, this, SocketClient);
+				while (true)
+				{
+					SocketBase *client = new SocketBase;
+					client->socket = std::base_socket::accept(socket, client->address, client->lenAddress);
+					std::thread   threadclient(&SocketBase::ReadPacket, this, client->socket, client, this);
 					threadclient.detach();
 				}
 
@@ -796,6 +925,52 @@ namespace std {
 			if (status == socket_error) return status_t::error_no_send;
 			return status_t::success;
 		}
+
+		client &operator[]  (const char *NameFunction)
+		{
+			strcpy(SelectFunction, NameFunction);
+			return *this;
+		}
+
+		client& operator = (const function_socket_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_client_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_client_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_socket_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_client_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_client_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+
+		client& operator = (const SocketBase SB) {
+
+			this->address = SB.address;
+			this->arch = SB.arch;
+			this->socket = SB.socket;
+			this->ip = SB.ip;
+			this->socket = SB.socket;
+			this->isRun = SB.isRun;
+			this->lenAddress = SB.lenAddress;
+			this->port = SB.port;
+			this->TableRunFunction = SB.TableRunFunction;
+
+			return *this;
+		}
+
+		client& operator = (const SocketBase *SB) {
+
+			this->address = SB->address;
+			this->arch = SB->arch;
+			this->socket = SB->socket;
+			this->ip = SB->ip;
+			this->socket = SB->socket;
+			this->isRun = SB->isRun;
+			this->lenAddress = SB->lenAddress;
+			this->port = SB->port;
+			this->TableRunFunction = SB->TableRunFunction;
+
+			return *this;
+		}
+
 	private:
 		status_t RunClient()
 		{
@@ -804,7 +979,12 @@ namespace std {
 
 			if (arch == arch_server_t::tcp_thread)
 			{
-				std::thread threadclient(&SocketBase::ReadPacket, this, socket);
+				SocketBase *client = new SocketBase;
+
+				client->address = this->address;
+				client->socket = this->socket;
+
+				std::thread threadclient(&SocketBase::ReadPacket, this, socket, client, this);
 				threadclient.detach();
 
 				return status_t::success;
@@ -826,4 +1006,149 @@ namespace std {
 		}
 	};
 
+
+	bool TableFunction::Run(std::string Name, std::socket_t socket, std::base_socket::byte_t *Buffer)
+	{
+		function_socket_byte_t *Func = function_socket_byte.GetFunction(Name);
+
+		if (Func != nullptr)
+		{
+			((*Func)(socket, Buffer));
+			return true;
+		}
+
+		return false;
+	}
+
+	bool TableFunction::Run(std::string Name, std::client client, std::base_socket::byte_t *Buffer)
+	{
+		function_client_byte_t *Func = function_client_byte.GetFunction(Name);
+
+		if (Func != nullptr) {
+			((*Func)(client, Buffer));
+			return true;
+		}
+
+		return false;
+	}
+
+	bool TableFunction::Run(std::string Name, std::server   server, std::base_socket::byte_t *Buffer)
+	{
+		function_server_byte_t *Func = function_server_byte.GetFunction(Name);
+
+		if (Func != nullptr)
+		{
+			((*Func)(server, Buffer));
+			return true;
+		}
+
+		return false;
+	}
+
+	bool TableFunction::Run(std::string Name, std::server   server, std::client client, std::base_socket::byte_t *Buffer)
+	{
+		function_server_client_byte_t *Func = function_server_client_byte.GetFunction(Name);
+
+		if (Func != nullptr)
+		{
+			((*Func)(server, client, Buffer));
+			return true;
+		}
+
+		return false;
+	}
+
+	bool TableFunction::Run(std::string Name, std::socket_t socket, std::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	{
+		function_socket_byte_uint32_t *Func = function_socket_byte_uint32.GetFunction(Name);
+
+		if (Func != nullptr) {
+			((*Func)(socket, Buffer, SizePacket));
+			return true;
+		}
+
+		return false;
+	}
+
+	bool TableFunction::Run(std::string Name, std::client   client, std::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	{
+		function_client_byte_uint32_t *Func = function_client_byte_uint32.GetFunction(Name);
+
+		if (Func != nullptr)
+		{
+			((*Func)(client, Buffer, SizePacket));
+			return true;
+		}
+		return false;
+	}
+
+	bool TableFunction::Run(std::string Name, std::server   server, std::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	{
+		function_server_byte_uint32_t *Func = function_server_byte_uint32.GetFunction(Name);
+
+		if (Func != nullptr) {
+			((*Func)(server, Buffer, SizePacket));
+
+			return true;
+		}
+
+		return false;
+	}
+
+	bool TableFunction::Run(std::string Name, std::server   server, std::client client, std::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	{
+		function_server_client_byte_uint32_t *Func = function_server_client_byte_uint32.GetFunction(Name);
+
+		if (Func != nullptr)
+		{
+			((*Func)(server, client, Buffer, SizePacket));
+			return true;
+		}
+		return false;
+	}
+
+	void SocketBase::ReadPacket(std::socket_t SocketFrom, SocketBase *socket_base, SocketBase *socket_base_server)
+	{
+		if (socket_base == nullptr)
+			return;
+
+		socket_base->InitAddr();
+		std::client client;
+		client = socket_base;
+
+		if (client.socket == socket_error)
+			return;
+
+		std::base_socket::byte_t *Data = new std::base_socket::byte_t[2048];
+		while (true) {
+			std::size_t StatusPacket = std::base_socket::recv(SocketFrom, Data, 2048, 0);
+
+			if (StatusPacket > 0)
+			{
+				//TableRunFunction.RunFunction("read", SocketFrom, Data);
+				if (!TableRunFunction.Run("read", SocketFrom, Data))
+					if (!TableRunFunction.Run("read", SocketFrom, Data, StatusPacket))
+						if (!TableRunFunction.Run("read", client, Data))
+							if (!TableRunFunction.Run("read", client, Data, StatusPacket))
+							{
+
+							}
+
+
+			}
+
+			if (!isRun)
+			{
+				break;
+			}
+
+			if (StatusPacket < 0)
+			{
+				//TableRunFunction.RunFunction("end", SocketFrom, Data);
+				break;
+			}
+		}
+		delete[] socket_base;
+		delete[] Data;
+	}
 }
