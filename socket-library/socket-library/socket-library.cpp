@@ -1,13 +1,20 @@
 #pragma once
 
 #include "../../Socket.hpp"
-
 #include <iostream>
+
+
+using namespace std::chrono_literals;
+std::chrono::time_point<std::chrono::steady_clock> start;
+std::chrono::time_point<std::chrono::steady_clock> end;
 
 void ReadPacket(std::socket_t Socket, std::base_socket::byte_t *Buffer)
 {
-	printf("\npacket %d Buffer: %s", Socket, Buffer);
+	end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> elapsed = end - start;
+	printf("\nPacket[%d - %lf ms]: %s", Socket, elapsed.count(), Buffer);	
 }
+
 //
 //void ReadPacket(std::client client, std::base_socket::byte_t *Buffer)
 //{
@@ -61,9 +68,14 @@ int main()
 	client.Connect("127.0.0.1", 500, std::arch_server_t::tcp_thread);
 	client.Run(std::type_blocked_t::non_block);
 
-	Sleep(50);
-	client.Send("test\0", 5);
+	for (;;) {
+		start = std::chrono::high_resolution_clock::now();
+		client.Send("Hello, World!\0", 15);
 
+		std::this_thread::sleep_for(1ms);
+	}
+
+  
 
 	for (;;)
 	{
