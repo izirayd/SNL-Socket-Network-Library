@@ -734,12 +734,18 @@ namespace std {
 	enum class arch_server_t
 	{
 		unknow = 0,
-		tcp_thread,
-		udp_thread
+		tcp_thread,               // Каждый клиент имеет свой собственный поток
+		tcp_run_thread,           // Каждый пакет будет обработан в созданом для него потоке
+		tcp_run_static_thread,    // Каждый пакет будет ждать очереди группы потоков, которая его выполнит
+		tcp_run_queue,            // Очередь пакетов будет выполняться в случае если было переданно управление на выполнение этих пакетов каким либо потоком, включая основной(например для обработки сети для через таймер)
+		udp_thread,               // Будет исполненно только одним потоком
+		udp_run_thread,           // Пакет получит свой поток, в котором он будет выполнен
+		udp_run_static_thread,    // Пакет будет отправлен в очередь, пока его не исполнит группа потокок
+	    udp_run_queue             // Очередь пакетов будет выполняться в случае если было переданно управление на выполнение этих пакетов каким либо потоком, включая основной(например для обработки сети для через таймер)
+
 	};
 
-	enum class type_blocked_t
-	{
+	enum class type_blocked_t	{
 		non_block,
 		block
 	};
@@ -758,7 +764,9 @@ namespace std {
 
 		~SocketBase() = default;
 
-		void ReadPacket(std::socket_t SocketFrom, SocketBase *socket_base_client, SocketBase *socket_base_server);
+		void ReadPacketThreadStream(std::socket_t SocketFrom, SocketBase *socket_base_client, SocketBase *socket_base_server);
+		void ReadPacketUdp(std::socket_t SocketFrom, SocketBase *socket_base_server);
+		void RunPacket(std::string Name, std::socket_t SocketFrom, std::server server, std::client client, std::base_socket::byte_t *Data, uint32_t SizeBuffer);
 
 		void Close() { isRun = false;  std::base_socket::close(socket); }
 		void InitAddr() { ip = inet_ntoa(address.sin_addr); port = (int)ntohs(address.sin_port); lenAddress = sizeof(address); }
@@ -875,6 +883,19 @@ namespace std {
 				return status_t::success;
 			}
 
+			if (archServer == arch_server_t::udp_thread)
+			{
+				status_t status = Create(ipServer, portServer, std::base_socket::address_families::inet, std::base_socket::type_protocol::dgram, std::base_socket::ipproto::udp);
+
+				if (status != status_t::success)
+					return status;
+
+				arch = archServer;
+
+				return status_t::success;
+			}
+
+
 			return status_t::error_no_select_arch;
 		}
 		status_t Run(type_blocked_t type = type_blocked_t::block)
@@ -900,14 +921,14 @@ namespace std {
 			if (socket == socket_error)
 				return status_t::error_no_create_socket;
 
-			if (arch == arch_server_t::tcp_thread)
-			{
-				
-				SocketBase *server = new SocketBase(0);
-				server->address    = this->address;
-				server->socket     = this->socket;
-				server->arch       = this->arch;
 
+			SocketBase *server = new SocketBase(0);
+			server->address = this->address;
+			server->socket = this->socket;
+			server->arch = this->arch;
+
+			if (arch == arch_server_t::tcp_thread)
+			{	
 				while (true)
 				{
 					SocketBase *client = new SocketBase(0);
@@ -921,16 +942,18 @@ namespace std {
 						continue;						
 					}
 
-					std::thread   threadclient(&SocketBase::ReadPacket, this, client->socket, client, server);
+					std::thread   threadclient(&SocketBase::ReadPacketThreadStream, this, client->socket, client, server);
 					threadclient.detach();
-
 				}
 
 				delete[] server;
-
 				return status_t::success;
 			}
 
+			if (arch == arch_server_t::udp_thread)	
+				ReadPacketUdp(socket, server);
+			
+			delete[] server;
 			return status_t::error_no_select_arch;
 		}
 	};
@@ -976,6 +999,21 @@ namespace std {
 				return status_t::success;
 			}
 
+			if (archServer == arch_server_t::udp_thread)
+			{
+				lenAddress = sizeof(address);
+				socket = std::base_socket::socket(std::base_socket::address_families::inet, std::base_socket::type_protocol::dgram, std::base_socket::ipproto::udp);
+
+				if (socket == socket_error)
+					return status_t::error_create_socket;
+
+				std::base_socket::CreateAddress(address, std::base_socket::address_families::inet, ipServer, portServer);
+
+				arch = archServer;
+
+				return status_t::success;
+			}
+
 			return status_t::error_no_select_arch;
 		}
 		status_t Run(type_blocked_t type = type_blocked_t::block)
@@ -995,14 +1033,33 @@ namespace std {
 			for (size_t i = 0; i < sz; i++)
 				p[i] = b[i];
 		}
+
 		std::size_t SizePacketBuffer;
+
+
 		status_t Send(std::base_socket::byte_t *Packet, std::size_t SizePacket)
 		{
-			memcopy(PacketBuffer, Packet, SizePacket);
-			int32_t status = std::base_socket::send(socket, PacketBuffer, SizePacket, 0);
-			if (status == socket_error) return status_t::error_no_send;
+			if (arch == arch_server_t::tcp_thread)
+			{
+				memcopy(PacketBuffer, Packet, SizePacket);
+				int32_t status = std::base_socket::send(socket, PacketBuffer, SizePacket, 0);
+				if (status == socket_error)
+					return status_t::error_no_send;
+			}
+
+			if (arch == arch_server_t::udp_thread)
+			{
+				memcopy(PacketBuffer, Packet, SizePacket);
+				int32_t status = std::base_socket::send(socket, PacketBuffer, SizePacket, 0, address, lenAddress);
+
+				if (status == socket_error)
+					return status_t::error_no_send;
+			}
+
 			return status_t::success;
 		}
+
+
 
 		client &operator[]  (const char *NameFunction)
 		{
@@ -1067,7 +1124,7 @@ namespace std {
 				client->socket = this->socket;
 
 
-				std::thread threadclient(&SocketBase::ReadPacket, this, socket, client, server);
+				std::thread threadclient(&SocketBase::ReadPacketThreadStream, this, socket, client, server);
 				threadclient.detach();
 
 				return status_t::success;
@@ -1190,7 +1247,7 @@ namespace std {
 		return false;
 	}
 
-	void SocketBase::ReadPacket(std::socket_t SocketFrom, SocketBase *socket_base, SocketBase *socket_base_server)
+	void SocketBase::ReadPacketThreadStream(std::socket_t SocketFrom, SocketBase *socket_base, SocketBase *socket_base_server)
 	{
 		if (socket_base == nullptr || socket_base_server == nullptr || SocketFrom == -1)
 			return;
@@ -1244,8 +1301,67 @@ namespace std {
 		delete[] Data;
 		Data = nullptr;
 	}
+
+	void SocketBase::ReadPacketUdp(std::socket_t SocketFrom, SocketBase *socket_base_server)
+	{
+		if (socket_base_server == nullptr || SocketFrom == -1)
+			return;
+
+		socket_base_server->InitAddr();
+
+		SocketBase socket_base_client(0);
+		std::server server(0, 0);
+		std::client client(0, 0);
+
+
+		server = socket_base_server;
+
+		if (SizeRead == 0)
+			return;
+
+		std::base_socket::byte_t *Data = new std::base_socket::byte_t[SizeRead];
+
+		if (Data == nullptr) {
+			printf("\nIn socket library cannot alloc memory for new client.");
+			std::base_socket::close(SocketFrom);
+			return;
+		}
+
+		while (true) {
+
+			socket_base_client.lenAddress = sizeof(socket_base_client.address);
+			int32_t StatusPacket = std::base_socket::recvfrom(SocketFrom, Data, SizeRead, 0, socket_base_client.address, socket_base_client.lenAddress);
+
+			if (StatusPacket < 1)
+				continue;
+
+			socket_base_client.InitAddr();
+
+			client = socket_base_client;
+
+			if (StatusPacket > 0)
+				TableRunFunction.RunForBasePacket("read", SocketFrom, server, client, Data, StatusPacket);
+
+			if (!isRun)
+			{
+				TableRunFunction.RunForBasePacket("closeserver", SocketFrom, server, client, nullptr, 0);
+				break;
+			}
+
+			if (StatusPacket < 0)
+			{
+				break;
+			}
+		}
+
+		delete[] Data;
+		Data = nullptr;
+	}
+
+
 	void TableFunction::RunForBasePacket(std::string Name, std::socket_t SocketFrom, std::server server, std::client client, std::base_socket::byte_t *Data, uint32_t SizeBuffer)
 	{
+	
 		if (!Run(Name, SocketFrom, Data))
 			if (!Run(Name, SocketFrom, Data, SizeBuffer))
 				if (!Run(Name, client, Data))
@@ -1254,5 +1370,12 @@ namespace std {
 							if (!Run(Name, server, Data, SizeBuffer))
 								if (!Run(Name, server, client, Data))
 									  Run(Name, server, client, Data, SizeBuffer);
+	}
+
+	void SocketBase::RunPacket(std::string Name, std::socket_t SocketFrom, std::server server, std::client client, std::base_socket::byte_t *Data, uint32_t SizeBuffer)
+	{
+		if (server.arch == arch_server_t::tcp_thread || server.arch == arch_server_t::udp_thread)
+			TableRunFunction.RunForBasePacket(Name, SocketFrom, server, client, Data, SizeBuffer);
+
 	}
 }

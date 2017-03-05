@@ -9,7 +9,7 @@ void ReadPacket(std::socket_t Socket, std::base_socket::byte_t *Buffer)
 {
 	end = std::chrono::high_resolution_clock::now();
 	std::chrono::duration<double, std::milli> elapsed = end - start;
-	printf("\nPacket[%d - %lf ms]: %s", Socket, elapsed.count(), Buffer);
+	printf("\nPacket[%d - %lf ms]: %s", Socket, elapsed.count(), Buffer);	
 }
 
 int main()
@@ -35,6 +35,6 @@ int main()
 
 	for (;;)
 		std::this_thread::sleep_for(1ms);
-
+	
 	return 0;
 }
