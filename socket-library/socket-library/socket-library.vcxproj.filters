@@ -24,7 +24,7 @@
     <ClInclude Include="targetver.h">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Socket.hpp">
+    <ClInclude Include="..\..\socket.hpp">
       <Filter>Заголовочные файлы</Filter>
     </ClInclude>
   </ItemGroup>
