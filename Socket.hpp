@@ -1,5 +1,21 @@
 /*
-   Socket nl 2018. Version 0.3
+  Socket snl 2018. Version 0.3 
+   
+  Socket network library - MIT License.
+
+  Copyright (c) 2018 OrionGame
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction,
+  including without limitation the rights to use, copy, modify, merge, publish, distribute,
+  sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #pragma once
@@ -7,7 +23,9 @@
 #define socket_major 0
 #define socket_minor 3
 
-namespace nl {	namespace base_socket	{
+// socket network library
+namespace snl {	
+	namespace base_socket	{
 		inline int get_major() { return socket_major; }
 		inline int get_minor() { return socket_minor; }
 	}
@@ -80,18 +98,18 @@ namespace nl {	namespace base_socket	{
 #define socket_base_tb   32
 
 #ifdef  __BORLANDC__
+  // special operator for run class member
   #define CLOSURE_SUPPORT __closure
 #else
   #define CLOSURE_SUPPORT
 #endif
 
-#define SYMBOL_END_IP_ZONE '.'
-
-namespace nl {
+// socket network library
+namespace snl {
 	template<typename T, typename B> inline void memory_cast(T& obj_out, const B obj_in) { memcpy(&obj_out, (unsigned char*)obj_in, sizeof(T)); }
 	template<typename T, typename B> inline void memory_cast(T& obj_out, const B& obj_in, const std::size_t size) { memcpy((unsigned char*)obj_out, (const unsigned char*)obj_in, size); }
 
-	void memcopy(char * p, const char* b, std::size_t sz, std::size_t start_position = 0, std::size_t start_position_data = 0) {
+	void memcopy(char* p, const char* b, std::size_t sz, std::size_t start_position = 0, std::size_t start_position_data = 0) {
 		for (size_t i = start_position; i < sz; i++)
 			p[i] = b[i + start_position_data];
 	}
@@ -108,7 +126,8 @@ template<typename data_t> friend inline auto operator operation (data_t& left, c
 
 int32_t count_alloc = 0;
 
-namespace nl {
+// socket network library
+namespace snl {
 
 	typedef unsigned char byte_t;
 
@@ -140,10 +159,10 @@ namespace nl {
 			if (new_size <= SizeBuffer)
 				return;
 			byte_t *tmpBuffer = new byte_t[SizeBuffer];
-			nl::memory_cast(tmpBuffer, Buffer, SizeBuffer);
+			snl::memory_cast(tmpBuffer, Buffer, SizeBuffer);
 			free();
 			alloc(new_size);
-			nl::memory_cast(Buffer, tmpBuffer, SizeBuffer);
+			snl::memory_cast(Buffer, tmpBuffer, SizeBuffer);
 			delete[] tmpBuffer;
 		}
 
@@ -152,22 +171,22 @@ namespace nl {
 	//	uvar() = default;
 		uvar(std::nullptr_t null = nullptr) {}
 		template<typename data_t, typename = none_t<decay<data_t>>>
-		uvar(data_t&& Data) { if (alloc(sizeof(data_t)))      nl::memory_cast(Buffer, &Data, SizeBuffer); }
-		uvar(uvar &&VarData) { if (alloc(VarData.SizeBuffer))  nl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer); }
+		uvar(data_t&& Data) { if (alloc(sizeof(data_t)))      snl::memory_cast(Buffer, &Data, SizeBuffer); }
+		uvar(uvar &&VarData) { if (alloc(VarData.SizeBuffer))  snl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer); }
 		uvar(uvar const &VarData) { 
 			if (alloc(VarData.SizeBuffer)) 
-				nl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer); 
+				snl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer); 
 		}
 
 		uvar &operator=(uvar &&VarData) {
 			if (this->SizeBuffer == VarData.SizeBuffer || this->SizeBuffer > VarData.SizeBuffer) {
-				nl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
+				snl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
 				return *this;
 			}
 			free();
 			if (alloc(VarData.SizeBuffer))
 			{
-				nl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
+				snl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
 				return *this;
 			}
 			return *this;
@@ -175,12 +194,12 @@ namespace nl {
 
 		uvar &operator=(uvar const &VarData) {
 			if (this->SizeBuffer == VarData.SizeBuffer || this->SizeBuffer > VarData.SizeBuffer) {
-				nl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
+				snl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
 				return *this;
 			}
 			free();
 			if (alloc(VarData.SizeBuffer)) {
-				nl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
+				snl::memory_cast(this->Buffer, VarData.Buffer, SizeBuffer);
 				return *this;
 			}
 			return *this;
@@ -191,7 +210,7 @@ namespace nl {
 			if (sizeData == 0)
 				return;
 			if (sizeData >= SizeBuffer)
-				nl::memory_cast(Data, &Buffer, SizeBuffer); // В случае чего & уберается. Так и не пофиксил похоже этот баг
+				snl::memory_cast(Data, &Buffer, SizeBuffer); // В случае чего & уберается. Так и не пофиксил похоже этот баг
 		}
 
 		template<typename B>
@@ -199,12 +218,12 @@ namespace nl {
 			if (sizeData == 0)
 				return;
 			if (sizeData == SizeBuffer) {
-				nl::memory_cast(this->Buffer, Data, SizeBuffer);
+				snl::memory_cast(this->Buffer, Data, SizeBuffer);
 				return;
 			}
 			free();
 			alloc(sizeData);
-			nl::memory_cast(this->Buffer, Data, SizeBuffer);
+			snl::memory_cast(this->Buffer, Data, SizeBuffer);
 		}
 
 		template<typename data_t, typename = none_t<decay<data_t>>>
@@ -215,17 +234,17 @@ namespace nl {
 				return *this;
 
 			if (sizeData == SizeBuffer) {
-				nl::memory_cast(this->Buffer, &Data, SizeBuffer);
+				snl::memory_cast(this->Buffer, &Data, SizeBuffer);
 				return *this;
 			}
 
 			free();
 			alloc(sizeData);
-			nl::memory_cast(this->Buffer, &Data, SizeBuffer);
+			snl::memory_cast(this->Buffer, &Data, SizeBuffer);
 			return *this;
 		}
 
-		inline bool operator== (const nl::uvar &Data) {
+		inline bool operator== (const snl::uvar &Data) {
 			if (this->size() == Data.size()) {
 				for (size_t i = 0; i < this->size(); i++)
 					if (this->Buffer[i] != Data.Buffer[i])
@@ -411,51 +430,51 @@ namespace nl {
 		}
 
 
-		/* inline  nl::uvar*   operator[] (std::vector<nl::uvar>::size_type pos) {
+		/* inline  snl::uvar*   operator[] (std::vector<snl::uvar>::size_type pos) {
 		return BlockData[pos];
 		}*/
 
 
-		inline   nl::uvar&  operator[] (std::vector<nl::uvar>::size_type pos) {
+		inline   snl::uvar&  operator[] (std::vector<snl::uvar>::size_type pos) {
 			return BlockData[pos];
 		}
 
 
 		template<typename data_t>
-		inline  data_t*   at(std::vector<nl::uvar>::size_type pos) {
+		inline  data_t*   at(std::vector<snl::uvar>::size_type pos) {
 			return BlockData[pos];
 		}
 
 		template<typename data_t>
-		inline  data_t&&  at(std::vector<nl::uvar>::size_type pos) {
+		inline  data_t&&  at(std::vector<snl::uvar>::size_type pos) {
 			return BlockData[pos];
 		}
 
-		typedef stream_buffer_iterator<nl::uvar> iterator;
-		typedef stream_buffer_iterator<nl::uvar> const_iterator;
+		typedef stream_buffer_iterator<snl::uvar> iterator;
+		typedef stream_buffer_iterator<snl::uvar> const_iterator;
 
 		inline iterator       begin() { return &BlockData[0]; }
 		inline iterator       end() { return &BlockData[BlockData.size() - 1]; }
 		inline const const_iterator cbegin() { return  BlockData[0]; }
 		inline const const_iterator cend() { return  BlockData[BlockData.size() - 1]; }
 
-		inline  std::vector<nl::uvar>::size_type size() const { return BlockData.size(); }
-		inline  std::vector<nl::uvar>::size_type max_size() const { return BlockData.max_size(); }
-		inline  std::vector<nl::uvar>::size_type capacity() const { return BlockData.capacity(); }
+		inline  std::vector<snl::uvar>::size_type size() const { return BlockData.size(); }
+		inline  std::vector<snl::uvar>::size_type max_size() const { return BlockData.max_size(); }
+		inline  std::vector<snl::uvar>::size_type capacity() const { return BlockData.capacity(); }
 		inline void shrink_to_fit() { BlockData.shrink_to_fit(); }
 
-		inline void reserve(std::vector<nl::uvar>::size_type size) { BlockData.reserve(size); }
-		inline void resize(std::vector<nl::uvar>::size_type size)  { BlockData.resize(size); }
+		inline void reserve(std::vector<snl::uvar>::size_type size) { BlockData.reserve(size); }
+		inline void resize(std::vector<snl::uvar>::size_type size)  { BlockData.resize(size); }
 
 		template<typename ... Args>
 		inline void push_back(Args&& ... args) { arg_context(add_context(args)...); }
 
-		inline nl::uvar *data() {
+		inline snl::uvar *data() {
 			return BlockData
 				.data();
 		}
 
-		inline const nl::uvar *data() const {
+		inline const snl::uvar *data() const {
 			return BlockData
 				.data();
 		}
@@ -463,12 +482,12 @@ namespace nl {
 		void data_allbuffer(char *Buffer)
 		{
 			int32_t size_list = this->size();
-			nl::memory_cast(Buffer, &size_list, sizeof(int32_t));
+			snl::memory_cast(Buffer, &size_list, sizeof(int32_t));
 			Buffer += sizeof(int32_t);
 			for (auto &it : *this) {
-				nl::memory_cast(Buffer, &it.size(), sizeof(int32_t));
+				snl::memory_cast(Buffer, &it.size(), sizeof(int32_t));
 				Buffer += sizeof(int32_t);
-				nl::memory_cast(Buffer, it.ToChar(), it.size());
+				snl::memory_cast(Buffer, it.ToChar(), it.size());
 				Buffer += it.size();
 			}
 		}
@@ -496,7 +515,7 @@ namespace nl {
 		}
 
 	private:
-		std::vector<nl::uvar> BlockData;
+		std::vector<snl::uvar> BlockData;
 		std::intptr_t blockPos = -1;
 
 		template<typename data_t, typename = none_t<decay<data_t>>>
@@ -506,7 +525,8 @@ namespace nl {
 	};
 }
 
-namespace nl
+// socket network library
+namespace snl
 {
 	struct function_uvar_t
 	{
@@ -514,16 +534,16 @@ namespace nl
 
 		virtual void call(
 			const uint32_t &count
-			, const nl::uvar& a1  = nl::uvar{ nullptr }
-			, const nl::uvar& a2  = nl::uvar{ nullptr }
-			, const nl::uvar& a3  = nl::uvar{ nullptr }
-			, const nl::uvar& a4  = nl::uvar{ nullptr }
-			, const nl::uvar& a5  = nl::uvar{ nullptr }
-			, const nl::uvar& a6  = nl::uvar{ nullptr }
-			, const nl::uvar& a7  = nl::uvar{ nullptr }
-			, const nl::uvar& a8  = nl::uvar{ nullptr }
-			, const nl::uvar& a9  = nl::uvar{ nullptr }
-			, const nl::uvar& a10 = nl::uvar{ nullptr }
+			, const snl::uvar& a1  = snl::uvar{ nullptr }
+			, const snl::uvar& a2  = snl::uvar{ nullptr }
+			, const snl::uvar& a3  = snl::uvar{ nullptr }
+			, const snl::uvar& a4  = snl::uvar{ nullptr }
+			, const snl::uvar& a5  = snl::uvar{ nullptr }
+			, const snl::uvar& a6  = snl::uvar{ nullptr }
+			, const snl::uvar& a7  = snl::uvar{ nullptr }
+			, const snl::uvar& a8  = snl::uvar{ nullptr }
+			, const snl::uvar& a9  = snl::uvar{ nullptr }
+			, const snl::uvar& a10 = snl::uvar{ nullptr }
 		) = 0;
 };
 
@@ -535,16 +555,16 @@ namespace nl
 
 		virtual void call(
 			const uint32_t &count
-			, const nl::uvar& a1  = nl::uvar{ nullptr }
-			, const nl::uvar& a2  = nl::uvar{ nullptr }
-			, const nl::uvar& a3  = nl::uvar{ nullptr }
-			, const nl::uvar& a4  = nl::uvar{ nullptr }
-			, const nl::uvar& a5  = nl::uvar{ nullptr }
-			, const nl::uvar& a6  = nl::uvar{ nullptr }
-			, const nl::uvar& a7  = nl::uvar{ nullptr }
-			, const nl::uvar& a8  = nl::uvar{ nullptr }
-			, const nl::uvar& a9  = nl::uvar{ nullptr }
-			, const nl::uvar& a10 = nl::uvar{ nullptr }
+			, const snl::uvar& a1  = snl::uvar{ nullptr }
+			, const snl::uvar& a2  = snl::uvar{ nullptr }
+			, const snl::uvar& a3  = snl::uvar{ nullptr }
+			, const snl::uvar& a4  = snl::uvar{ nullptr }
+			, const snl::uvar& a5  = snl::uvar{ nullptr }
+			, const snl::uvar& a6  = snl::uvar{ nullptr }
+			, const snl::uvar& a7  = snl::uvar{ nullptr }
+			, const snl::uvar& a8  = snl::uvar{ nullptr }
+			, const snl::uvar& a9  = snl::uvar{ nullptr }
+			, const snl::uvar& a10 = snl::uvar{ nullptr }
 		) override
 		{
 			if (count == count_arg)
@@ -713,14 +733,15 @@ namespace nl
 	};
 }
 
-namespace nl {
+// socket network library
+namespace snl {
 
 #if defined(PLATFORM_ARCH_x64) && defined(PLATFORM_WINDOWS)
 	typedef uint64_t   socket_t;
 #elif defined(PLATFORM_WINDOWS) && defined(PLATFORM_ARCH_x32)
 	typedef uint32_t   socket_t;
 #elif  defined(PLATFORM_LINUX)
-	typedef int32_t   socket_t;
+	typedef int32_t    socket_t;
 #endif
 	
 	typedef int32_t  socket_error;
@@ -849,7 +870,7 @@ namespace nl {
 			for (std::size_t i = 0; i < lenIP; i++) {
 				if (count_zone == type) {
 					int w = 0;
-					while (src[i + w] != SYMBOL_END_IP_ZONE) {
+					while (src[i + w] != '.') {
 						parcerBuf[w] = src[i + w];
 						w++;
 
@@ -863,7 +884,7 @@ namespace nl {
 					return static_cast<uint8_t>(atoi(parcerBuf));
 				}
 
-				if (src[i] == SYMBOL_END_IP_ZONE)
+				if (src[i] == '.')
 					count_zone++;
 			}
 
@@ -915,12 +936,12 @@ namespace nl {
 
 		};
 
-		inline int32_t shutdown(nl::socket_t socket, shutdown_t sd_option = shutdown_t::rdwr)
+		inline int32_t shutdown(snl::socket_t socket, shutdown_t sd_option = shutdown_t::rdwr)
 		{
 			return ::shutdown(socket, static_cast<int32_t>(sd_option));
 		}
 
-		inline int32_t close(nl::socket_t socket) {
+		inline int32_t close(snl::socket_t socket) {
 
 			base_socket::shutdown(socket);
 
@@ -1043,131 +1064,132 @@ namespace nl {
 			max
 		};
 
-		inline uint32_t    inet_addres(nl::ipv4 ip) { return ::inet_addr(ip); }
+		inline uint32_t    inet_addres(snl::ipv4 ip) { return ::inet_addr(ip); }
 
 		inline uint16_t ntohs(uint16_t us) { return ::ntohs(us); }
 		inline uint16_t htons(uint16_t us) { return ::htons(us); }
 		inline uint32_t htonl(uint32_t ui) { return ::htonl(ui); }
 		inline uint32_t ntohl(uint32_t ui) { return ::ntohl(ui); }
 
-		inline void create_address(nl::base_socket::socket_address_in &address, nl::base_socket::address_families family, nl::ipv4 ip, nl::port_t port) {
+		inline void create_address(snl::base_socket::socket_address_in &address, snl::base_socket::address_families family, snl::ipv4 ip, snl::port_t port) {
 			init_socket();
-			address.sin_family = static_cast<decltype(address.sin_family)>(family); address.sin_addr.s_addr = nl::base_socket::inet_addres(ip); address.sin_port = nl::base_socket::htons(port);
+			address.sin_family = static_cast<decltype(address.sin_family)>(family); address.sin_addr.s_addr = snl::base_socket::inet_addres(ip); address.sin_port = snl::base_socket::htons(port);
 		}		
 			
-		inline int32_t bind(nl::socket_t socket, const nl::base_socket::socket_address_in address) {
+		inline int32_t bind(snl::socket_t socket, const snl::base_socket::socket_address_in address) {
 			init_socket();
 			return ::bind(socket, (sockaddr*)&address, sizeof(address));
 		}
 
-		inline nl::socket_t socket(nl::base_socket::address_families address, nl::base_socket::type_protocol type_protocol, nl::base_socket::ipproto ipproto) {
+		inline snl::socket_t socket(snl::base_socket::address_families address, snl::base_socket::type_protocol type_protocol, snl::base_socket::ipproto ipproto) {
 			init_socket();
 			return ::socket(static_cast<int>(address), static_cast<int>(type_protocol), static_cast<int>(ipproto));
 		}
 
-		inline int32_t listen(nl::socket_t socket, int32_t count) {
+		inline int32_t listen(snl::socket_t socket, int32_t count) {
 			init_socket();
 			return ::listen(socket, count);
 		}
 
-		inline nl::socket_t accept(nl::socket_t socket, nl::base_socket::socket_address_in &address, nl::base_socket::socket_address_len &len) {
+		inline snl::socket_t accept(snl::socket_t socket, snl::base_socket::socket_address_in &address, snl::base_socket::socket_address_len &len) {
 			init_socket();
 			return ::accept(socket, (struct sockaddr*)&address, &len);
 		}
 
-		inline int32_t recv(nl::socket_t socket, nl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags) {
+		inline int32_t recv(snl::socket_t socket, snl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags) {
 			return ::recv(socket, static_cast<char *>(Data), SizePacket, Flags);
 		}
 
-		inline int32_t send(nl::socket_t socket, const nl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags) {
+		inline int32_t send(snl::socket_t socket, const snl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags) {
 			return ::send(socket, static_cast<const char *>(Data), SizePacket, Flags);
 		}
 
-		inline int32_t connect(nl::socket_t socket, const nl::base_socket::socket_address_in &address, nl::base_socket::socket_address_len &len) {
+		inline int32_t connect(snl::socket_t socket, const snl::base_socket::socket_address_in &address, snl::base_socket::socket_address_len &len) {
 			init_socket();
 			return ::connect(socket, (struct sockaddr*)&address, len);
 		}
 
-		inline int32_t connect(nl::socket_t socket, nl::ipv4 ip, nl::port_t port) {
+		inline int32_t connect(snl::socket_t socket, snl::ipv4 ip, snl::port_t port) {
 			init_socket();
-			nl::base_socket::socket_address_in  address;
-			nl::base_socket::socket_address_len lenAddress = sizeof(address);
-			nl::base_socket::create_address(address, nl::base_socket::address_families::inet, ip, port);
-			return nl::base_socket::connect(socket, address, lenAddress);
+			snl::base_socket::socket_address_in  address;
+			snl::base_socket::socket_address_len lenAddress = sizeof(address);
+			snl::base_socket::create_address(address, snl::base_socket::address_families::inet, ip, port);
+			return snl::base_socket::connect(socket, address, lenAddress);
 		}
 
-		inline int32_t connect(nl::socket_t socket, nl::ipv4 ip, nl::port_t port, nl::base_socket::address_families family) {
+		inline int32_t connect(snl::socket_t socket, snl::ipv4 ip, snl::port_t port, snl::base_socket::address_families family) {
 			init_socket();
-			nl::base_socket::socket_address_in  address;
-			nl::base_socket::socket_address_len lenAddress = sizeof(address);
-			nl::base_socket::create_address(address, family, ip, port);
-			return nl::base_socket::connect(socket, address, lenAddress);
+			snl::base_socket::socket_address_in  address;
+			snl::base_socket::socket_address_len lenAddress = sizeof(address);
+			snl::base_socket::create_address(address, family, ip, port);
+			return snl::base_socket::connect(socket, address, lenAddress);
 		}
 
-		inline int32_t getsockopt(nl::socket_t socket, int32_t Level, int32_t Option, nl::base_socket::byte_t *Value, socket_len_t &lenValue) {
+		inline int32_t getsockopt(snl::socket_t socket, int32_t Level, int32_t Option, snl::base_socket::byte_t *Value, socket_len_t &lenValue) {
 			init_socket();
 			return ::getsockopt(socket, static_cast<int>(Level), static_cast<int>(Option), Value, &lenValue);
 		}
 
-		inline int32_t setsockopt(nl::socket_t socket, int32_t Level, int32_t Option, nl::base_socket::byte_t *Value, int32_t lenValue) {
+		inline int32_t setsockopt(snl::socket_t socket, int32_t Level, int32_t Option, snl::base_socket::byte_t *Value, int32_t lenValue) {
 			init_socket();
 			return ::setsockopt(socket, static_cast<int>(Level), static_cast<int>(Option), Value, static_cast<int>(lenValue));
 		}
 
-		inline int32_t reuseaddr(nl::socket_t socket) {
+		inline int32_t reuseaddr(snl::socket_t socket) {
 			init_socket();
 			int32_t optval = -1;
-			return base_socket::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (nl::base_socket::byte_t*) &optval, sizeof(optval));
+			return base_socket::setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, (snl::base_socket::byte_t*) &optval, sizeof(optval));
 		}
 
-		inline int32_t sendto(nl::socket_t socket, const nl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, nl::base_socket::socket_address_in &address, nl::base_socket::socket_address_len &len) {
+		inline int32_t sendto(snl::socket_t socket, const snl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, snl::base_socket::socket_address_in &address, snl::base_socket::socket_address_len &len) {
 			return ::sendto(socket, Data, SizePacket, Flags, (struct sockaddr*)&address, len);
 		}
 
-		inline int32_t sendto(nl::socket_t socket, nl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, nl::ipv4 ip, nl::port_t port, nl::base_socket::address_families family) {
-			nl::base_socket::socket_address_in  address;
-			nl::base_socket::socket_address_len len = sizeof(address);
-			nl::base_socket::create_address(address, family, ip, port);
+		inline int32_t sendto(snl::socket_t socket, snl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, snl::ipv4 ip, snl::port_t port, snl::base_socket::address_families family) {
+			snl::base_socket::socket_address_in  address;
+			snl::base_socket::socket_address_len len = sizeof(address);
+			snl::base_socket::create_address(address, family, ip, port);
 			return ::sendto(socket, Data, SizePacket, Flags, (struct sockaddr*)&address, len);
 		}
 
-		inline int32_t send(nl::socket_t socket, const nl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, nl::base_socket::socket_address_in &address, nl::base_socket::socket_address_len &len) {
+		inline int32_t send(snl::socket_t socket, const snl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, snl::base_socket::socket_address_in &address, snl::base_socket::socket_address_len &len) {
 			return sendto(socket, Data, SizePacket, Flags, address, len);
 		}
 
-		inline int32_t recvfrom(nl::socket_t socket, nl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, nl::base_socket::socket_address_in &address, nl::base_socket::socket_address_len &len) {
+		inline int32_t recvfrom(snl::socket_t socket, snl::base_socket::byte_t *Data, int32_t SizePacket, int32_t Flags, snl::base_socket::socket_address_in &address, snl::base_socket::socket_address_len &len) {
 			return ::recvfrom(socket, Data, SizePacket, Flags, (struct sockaddr*)&address, &len);
 		}
 	}
 }
 
-namespace nl {
+// socket network library
+namespace snl {
 
 	class client;
 	class server;
 
-	typedef void(*function_socket_byte_t)(nl::socket_t, nl::base_socket::byte_t*);
-	typedef void(*function_client_byte_t)(nl::client, nl::base_socket::byte_t*);
-	typedef void(*function_server_byte_t)(nl::server, nl::base_socket::byte_t*);
-	typedef void(*function_server_client_byte_t)(nl::server, nl::client, nl::base_socket::byte_t *);
+	typedef void(*function_socket_byte_t)(snl::socket_t, snl::base_socket::byte_t*);
+	typedef void(*function_client_byte_t)(snl::client, snl::base_socket::byte_t*);
+	typedef void(*function_server_byte_t)(snl::server, snl::base_socket::byte_t*);
+	typedef void(*function_server_client_byte_t)(snl::server, snl::client, snl::base_socket::byte_t *);
 
-	typedef void(*function_socket_byte_uint32_t)(nl::socket_t, nl::base_socket::byte_t *, uint32_t);
-	typedef void(*function_client_byte_uint32_t)(nl::client, nl::base_socket::byte_t *, uint32_t);
-	typedef void(*function_server_byte_uint32_t)(nl::server, nl::base_socket::byte_t *, uint32_t);
-	typedef void(*function_server_client_byte_uint32_t)(nl::server, nl::client, nl::base_socket::byte_t *, uint32_t);
+	typedef void(*function_socket_byte_uint32_t)(snl::socket_t, snl::base_socket::byte_t *, uint32_t);
+	typedef void(*function_client_byte_uint32_t)(snl::client, snl::base_socket::byte_t *, uint32_t);
+	typedef void(*function_server_byte_uint32_t)(snl::server, snl::base_socket::byte_t *, uint32_t);
+	typedef void(*function_server_client_byte_uint32_t)(snl::server, snl::client, snl::base_socket::byte_t *, uint32_t);
 
 	/* Для ООП так как содержит поинты на this. CLOSURE_SUPPORT является расширением поддержки ООП для борланда вплоть до XE10.2. Их фича и не
 	является стандартом, но к сожалению необходима.
 	*/
-	typedef void(CLOSURE_SUPPORT *function_socket_byte_point_t)(void *, nl::socket_t, nl::base_socket::byte_t*);
-	typedef void(CLOSURE_SUPPORT *function_client_byte_point_t)(void *, nl::client, nl::base_socket::byte_t*);
-	typedef void(CLOSURE_SUPPORT *function_server_byte_point_t)(void *, nl::server, nl::base_socket::byte_t*);
-	typedef void(CLOSURE_SUPPORT *function_server_client_byte_point_t)(void *, nl::server, nl::client, nl::base_socket::byte_t *);
+	typedef void(CLOSURE_SUPPORT *function_socket_byte_point_t)(void *, snl::socket_t, snl::base_socket::byte_t*);
+	typedef void(CLOSURE_SUPPORT *function_client_byte_point_t)(void *, snl::client, snl::base_socket::byte_t*);
+	typedef void(CLOSURE_SUPPORT *function_server_byte_point_t)(void *, snl::server, snl::base_socket::byte_t*);
+	typedef void(CLOSURE_SUPPORT *function_server_client_byte_point_t)(void *, snl::server, snl::client, snl::base_socket::byte_t *);
 
-	typedef void(CLOSURE_SUPPORT *function_socket_byte_uint32_point_t)(void *, nl::socket_t, nl::base_socket::byte_t *, uint32_t);
-	typedef void(CLOSURE_SUPPORT *function_client_byte_uint32_point_t)(void *, nl::client, nl::base_socket::byte_t *, uint32_t);
-	typedef void(CLOSURE_SUPPORT *function_server_byte_uint32_point_t)(void *, nl::server, nl::base_socket::byte_t *, uint32_t);
-	typedef void(CLOSURE_SUPPORT *function_server_client_byte_uint32_point_t)(void *, nl::server, nl::client, nl::base_socket::byte_t *, uint32_t);
+	typedef void(CLOSURE_SUPPORT *function_socket_byte_uint32_point_t)(void *, snl::socket_t, snl::base_socket::byte_t *, uint32_t);
+	typedef void(CLOSURE_SUPPORT *function_client_byte_uint32_point_t)(void *, snl::client, snl::base_socket::byte_t *, uint32_t);
+	typedef void(CLOSURE_SUPPORT *function_server_byte_uint32_point_t)(void *, snl::server, snl::base_socket::byte_t *, uint32_t);
+	typedef void(CLOSURE_SUPPORT *function_server_client_byte_uint32_point_t)(void *, snl::server, snl::client, snl::base_socket::byte_t *, uint32_t);
 
 	template <typename T>
 	struct table_function_t
@@ -1278,7 +1300,7 @@ namespace nl {
 			return *this;
 		}
 
-		void RunForBasePacket(void *class_point, std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer);
+		void RunForBasePacket(void *class_point, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
 
 		inline void Add(const std::string &Name, const  function_socket_byte_t        func)        { function_socket_byte.AddFunction(Name, func); }
 		inline void Add(const std::string &Name, const  function_client_byte_t        func)        { function_client_byte.AddFunction(Name, func); }
@@ -1297,22 +1319,22 @@ namespace nl {
 		inline void Add(const std::string &Name, const  function_server_byte_uint32_point_t  func) { function_server_byte_uint32_point.AddFunction(Name, func); }
 		inline void Add(const std::string &Name, const  function_server_client_byte_uint32_point_t func) { function_server_client_byte_uint32_point.AddFunction(Name, func); }
 
-		bool Run(const std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer);
-		bool Run(const std::string &Name, nl::client   client, nl::base_socket::byte_t *Buffer);
-		bool Run(const std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer);
-		bool Run(const std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
-		bool Run(const std::string &Name, nl::client   client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
-		bool Run(const std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
-		bool Run(const std::string &Name, nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer);
-		bool Run(const std::string &Name, nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
-		bool Run(void *point_class, const std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer);
-		bool Run(void *point_class, const std::string &Name, nl::client   client, nl::base_socket::byte_t *Buffer);
-		bool Run(void *point_class, const std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer);
-		bool Run(void *point_class, const std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
-		bool Run(void *point_class, const std::string &Name, nl::client   client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
-		bool Run(void *point_class, const std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
-		bool Run(void *point_class, const std::string &Name, nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer);
-		bool Run(void *point_class, const std::string &Name, nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(const std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer);
+		bool Run(const std::string &Name, snl::client   client, snl::base_socket::byte_t *Buffer);
+		bool Run(const std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer);
+		bool Run(const std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(const std::string &Name, snl::client   client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(const std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(const std::string &Name, snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer);
+		bool Run(const std::string &Name, snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(void *point_class, const std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer);
+		bool Run(void *point_class, const std::string &Name, snl::client   client, snl::base_socket::byte_t *Buffer);
+		bool Run(void *point_class, const std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer);
+		bool Run(void *point_class, const std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(void *point_class, const std::string &Name, snl::client   client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(void *point_class, const std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
+		bool Run(void *point_class, const std::string &Name, snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer);
+		bool Run(void *point_class, const std::string &Name, snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket);
 
 		list_table_function_t<function_socket_byte_t>               function_socket_byte = 0;
 		list_table_function_t<function_client_byte_t>               function_client_byte = 0;
@@ -1383,28 +1405,28 @@ namespace nl {
 			}
 		}
 
-		void ReadPacketTcp(void *point_class, nl::socket_t SocketFrom, socket_base_t *socket_base_client, socket_base_t *socket_base_server);
-		void ReadPacketUdp(void *point_class, nl::socket_t SocketFrom, socket_base_t *socket_base_server);
-		void RunPacket(void *point_class, std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer);
+		void ReadPacketTcp(void *point_class, snl::socket_t SocketFrom, socket_base_t *socket_base_client, socket_base_t *socket_base_server);
+		void ReadPacketUdp(void *point_class, snl::socket_t SocketFrom, socket_base_t *socket_base_server);
+		void RunPacket(void *point_class, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
 
-		inline void close() { isRun = false;  nl::base_socket::close(socket); }
-		void InitAddr() { ip = inet_ntoa(address.sin_addr); port = nl::base_socket::ntohs(address.sin_port); lenAddress = sizeof(address); }
+		inline void close() { isRun = false;  snl::base_socket::close(socket); }
+		void InitAddr() { ip = inet_ntoa(address.sin_addr); port = snl::base_socket::ntohs(address.sin_port); lenAddress = sizeof(address); }
 
-		socket_base_t& operator = (const nl::base_socket::socket_address_in _address) { address = _address; InitAddr();  return *this; }
+		socket_base_t& operator = (const snl::base_socket::socket_address_in _address) { address = _address; InitAddr();  return *this; }
 		socket_base_t& operator = (const ipv4 _ip) { ip = _ip; return *this; }
-		socket_base_t& operator = (const nl::socket_t _socket) { socket = _socket; return *this; }
+		socket_base_t& operator = (const snl::socket_t _socket) { socket = _socket; return *this; }
 
 		uint32_t SizeRead = 2048;
 
 		bool          isRun = true;
-		nl::port_t   port = 0;
-		nl::socket_t socket = 0;
-		nl::ipv4     ip = "0.0.0.0";	
-		nl::base_socket::socket_address_in  address;
-		nl::base_socket::socket_address_len lenAddress = 0;
+		snl::port_t   port = 0;
+		snl::socket_t socket = 0;
+		snl::ipv4     ip = "0.0.0.0";	
+		snl::base_socket::socket_address_in  address;
+		snl::base_socket::socket_address_len lenAddress = 0;
 		arch_server_t arch = arch_server_t::unknow;
 		TableFunction *TableRunFunction = nullptr;
-		nl::function_invoke FunctionInvoke;
+		snl::function_invoke FunctionInvoke;
 
 		char SelectFunction[32] = { 0 };
 
@@ -1419,9 +1441,9 @@ namespace nl {
 
 		void get_error(std::string &str)
 		{
-			nl::base_socket::byte_t error[32] = { 0 };
-			nl::base_socket::socket_len_t len = sizeof(error);
-			int retval = nl::base_socket::getsockopt(socket, SOL_SOCKET, SO_ERROR, error, len);
+			snl::base_socket::byte_t error[32] = { 0 };
+			snl::base_socket::socket_len_t len = sizeof(error);
+			int retval = snl::base_socket::getsockopt(socket, SOL_SOCKET, SO_ERROR, error, len);
 
 			if (retval != 0) {
 				str = strerror(retval);
@@ -1591,16 +1613,16 @@ namespace nl {
 		}
 
 
-		status_t create(nl::ipv4 ipServer, nl::port_t portServer, nl::base_socket::address_families family, nl::base_socket::type_protocol type, nl::base_socket::ipproto ipproto)
+		status_t create(snl::ipv4 ipServer, snl::port_t portServer, snl::base_socket::address_families family, snl::base_socket::type_protocol type, snl::base_socket::ipproto ipproto)
 		{
 			lenAddress = sizeof(address);
-			socket = nl::base_socket::socket(family, type, ipproto);
+			socket = snl::base_socket::socket(family, type, ipproto);
 
 			if (socket == socket_error)
 				return status_t::error_create_socket;
 
-			nl::base_socket::create_address(address, family, ipServer, portServer);
-			int32_t status = nl::base_socket::bind(socket, address);
+			snl::base_socket::create_address(address, family, ipServer, portServer);
+			int32_t status = snl::base_socket::bind(socket, address);
 
 			if (status == socket_error)
 				return status_t::error_bind_socket;
@@ -1609,15 +1631,15 @@ namespace nl {
 			return status_t::success;
 		}
 
-		status_t create(nl::ipv4 ipServer, nl::port_t portServer, arch_server_t archServer, const int32_t &listen = 5)
+		status_t create(snl::ipv4 ipServer, snl::port_t portServer, arch_server_t archServer, const int32_t &listen = 5)
 		{
 			if (archServer == arch_server_t::tcp_thread)
 			{
-				status_t status = create(ipServer, portServer, nl::base_socket::address_families::inet, nl::base_socket::type_protocol::stream, nl::base_socket::ipproto::tcp);
+				status_t status = create(ipServer, portServer, snl::base_socket::address_families::inet, snl::base_socket::type_protocol::stream, snl::base_socket::ipproto::tcp);
 				if (status != status_t::success)
 					return status;
 
-				int32_t statuslisten = nl::base_socket::listen(socket, listen);
+				int32_t statuslisten = snl::base_socket::listen(socket, listen);
 
 				if (statuslisten == socket_error)
 					return status_t::error_listen_socket;
@@ -1629,8 +1651,7 @@ namespace nl {
 
 			if (archServer == arch_server_t::udp_thread)
 			{
-
-				status_t status = create(ipServer, portServer, nl::base_socket::address_families::inet, nl::base_socket::type_protocol::dgram, nl::base_socket::ipproto::udp);
+				status_t status = create(ipServer, portServer, snl::base_socket::address_families::inet, snl::base_socket::type_protocol::dgram, snl::base_socket::ipproto::udp);
 
 				if (status != status_t::success)
 					return status;
@@ -1657,7 +1678,7 @@ namespace nl {
 			}
 			return status_t::error_no_select_arch;
 		}
-		inline status_t send(nl::socket_t socketClient, nl::base_socket::byte_t *Packet, int32_t SizePacket)	{ nl::base_socket::send(socketClient, Packet, SizePacket, 0);	}
+		inline status_t send(snl::socket_t socketClient, snl::base_socket::byte_t *Packet, int32_t SizePacket)	{ snl::base_socket::send(socketClient, Packet, SizePacket, 0);	}
 	private:
 		status_t RunServer()
 		{
@@ -1667,8 +1688,8 @@ namespace nl {
 			socket_base_t *server = new socket_base_t(0);
 
 			server->address = this->address;
-			server->socket = this->socket;
-			server->arch = this->arch;
+			server->socket  = this->socket;
+			server->arch    = this->arch;
 			
 
 			if (arch == arch_server_t::tcp_thread)
@@ -1679,7 +1700,7 @@ namespace nl {
 					client->lenAddress = sizeof(client->address);
 					client->arch = this->arch;
 
-					client->socket = nl::base_socket::accept(socket, client->address, client->lenAddress);
+					client->socket = snl::base_socket::accept(socket, client->address, client->lenAddress);
 
 					//	printf("::accept\n");
 
@@ -1793,28 +1814,28 @@ namespace nl {
 			CreatePacketBuffer(SizePacketBuffer);
 		}
 
-		status_t connect(nl::ipv4 ipServer, nl::port_t portServer, nl::base_socket::address_families family, nl::base_socket::type_protocol type, nl::base_socket::ipproto ipproto)
+		status_t connect(snl::ipv4 ipServer, snl::port_t portServer, snl::base_socket::address_families family, snl::base_socket::type_protocol type, snl::base_socket::ipproto ipproto)
 		{
 			lenAddress = sizeof(address);
-			socket = nl::base_socket::socket(family, type, ipproto);
+			socket = snl::base_socket::socket(family, type, ipproto);
 
 			if (socket == socket_error)
 				return status_t::error_create_socket;
 
-			nl::base_socket::create_address(address, family, ipServer, portServer);
+			snl::base_socket::create_address(address, family, ipServer, portServer);
 			int32_t
-				status = nl::base_socket::connect(socket, address, lenAddress);
+				status = snl::base_socket::connect(socket, address, lenAddress);
 
 			if (status == socket_error)
 				return status_t::error_connect;
 
 			return status_t::success;
 		}
-		status_t connect(nl::ipv4 ipServer, nl::port_t portServer, arch_server_t archServer)
+		status_t connect(snl::ipv4 ipServer, snl::port_t portServer, arch_server_t archServer)
 		{
 			if (archServer == arch_server_t::tcp_thread)
 			{
-				status_t status = connect(ipServer, portServer, nl::base_socket::address_families::inet, nl::base_socket::type_protocol::stream, nl::base_socket::ipproto::tcp);
+				status_t status = connect(ipServer, portServer, snl::base_socket::address_families::inet, snl::base_socket::type_protocol::stream, snl::base_socket::ipproto::tcp);
 
 				if (status != status_t::success)
 					return status;
@@ -1827,12 +1848,12 @@ namespace nl {
 			if (archServer == arch_server_t::udp_thread)
 			{
 				lenAddress = sizeof(address);
-				socket = nl::base_socket::socket(nl::base_socket::address_families::inet, nl::base_socket::type_protocol::dgram, nl::base_socket::ipproto::udp);
+				socket = snl::base_socket::socket(snl::base_socket::address_families::inet, snl::base_socket::type_protocol::dgram, snl::base_socket::ipproto::udp);
 
 				if (socket == socket_error)
 					return status_t::error_create_socket;
 
-				nl::base_socket::create_address(address, nl::base_socket::address_families::inet, ipServer, portServer);
+				snl::base_socket::create_address(address, snl::base_socket::address_families::inet, ipServer, portServer);
 
 				arch = archServer;
 
@@ -1863,39 +1884,39 @@ namespace nl {
 		void *point_class;
 
 		template<typename T>
-		inline status_t base_send(const T *objSend, std::size_t Size)	{	return send(static_cast<nl::base_socket::byte_t*>(objSend), Size);		}
+		inline status_t base_send(const T *objSend, std::size_t Size)	{	return this->send(static_cast<snl::base_socket::byte_t*>(objSend), Size);		}
 
 		template<typename ..._Args>
 		status_t send(const char *NameFunction, _Args && ... args)
 		{
-			nl::stream_buffer socket_buffer;
+			snl::stream_buffer socket_buffer;
 			socket_buffer.push_back(args...);
 	
 			int32_t size = 0;	
 			for (auto &it : socket_buffer)
 				size += it.size();
 
-			PacketBuffer[0] = static_cast<char>(nl::packet_header_t::wrapertable_arg_packet);
+			PacketBuffer[0] = static_cast<char>(snl::packet_header_t::wrapertable_arg_packet);
 
 			if (strlen(NameFunction) > 32)
-				return nl::status_t::error_size_func_name;
+				return snl::status_t::error_size_func_name;
 
 			memcopy(PacketBuffer + 1, NameFunction, 32);
 			
 			socket_buffer.data_allbuffer(PacketBuffer + 1 + 32);
-			int32_t total = 1 + 32 + size + (socket_buffer.size() * sizeof(int32_t)) + sizeof(int32_t);
+			int32_t total = sizeof(snl::base_socket::byte_t) + 32 /*Size function name*/ + size + (socket_buffer.size() * sizeof(int32_t)) + sizeof(int32_t);
 			return base_send(PacketBuffer, total);
 		}
 
-		status_t base_send(const nl::base_socket::byte_t *Packet, const int32_t &SizePacket)
+		status_t base_send(const snl::base_socket::byte_t *Packet, const int32_t &SizePacket)
 		{
 			if (arch == arch_server_t::tcp_thread)		
-				if (nl::base_socket::send(socket, Packet, SizePacket, 0) == socket_error)
+				if (snl::base_socket::send(socket, Packet, SizePacket, 0) == socket_error)
 					return status_t::error_no_send;
 			
 			if (arch == arch_server_t::udp_thread)			
-				if (nl::base_socket::send(socket, Packet, SizePacket, 0, address, lenAddress) == socket_error)
-				  return status_t::error_no_send;
+				if (snl::base_socket::send(socket, Packet, SizePacket, 0, address, lenAddress) == socket_error)
+				    return status_t::error_no_send;
 			
 			return status_t::success;
 		}
@@ -1908,63 +1929,51 @@ namespace nl {
 			return *this;
 		}
 
-		client& operator = (const function_socket_byte_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_client_byte_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_byte_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_client_byte_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_socket_byte_uint32_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_client_byte_uint32_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_byte_uint32_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_client_byte_uint32_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_socket_byte_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_client_byte_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_byte_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_client_byte_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_socket_byte_uint32_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_client_byte_uint32_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_byte_uint32_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_client_byte_uint32_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
 
+		inline client& operator = (const function_socket_byte_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_client_byte_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_byte_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_client_byte_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_socket_byte_uint32_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_client_byte_uint32_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_byte_uint32_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		inline client& operator = (const function_server_client_byte_uint32_point_t &Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
 
-		client& operator = (const function_socket_byte_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_client_byte_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_byte_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_client_byte_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_socket_byte_uint32_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_client_byte_uint32_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_byte_uint32_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
-		client& operator = (const function_server_client_byte_uint32_point_t Func) { TableRunFunction->Add(SelectFunction, Func);	return *this; }
+		template<typename T>
+		inline client& operator = (const T *data) { return *this = *data; }
 
-		client& operator = (const socket_base_t SB) {
+		client& operator = (const snl::socket_base_t &socket_base) {
 
-			this->address = SB.address;
-			this->arch = SB.arch;
-			this->socket = SB.socket;
-			this->ip = SB.ip;
-			this->socket = SB.socket;
-			this->isRun = SB.isRun;
-			this->lenAddress = SB.lenAddress;
-			this->port = SB.port;
-			this->TableRunFunction = SB.TableRunFunction;
-
-			return *this;
-		}
-
-		client& operator = (const socket_base_t *SB) {
-
-			this->address = SB->address;
-			this->arch = SB->arch;
-			this->socket = SB->socket;
-			this->ip = SB->ip;
-			this->socket = SB->socket;
-			this->isRun = SB->isRun;
-			this->lenAddress = SB->lenAddress;
-			this->port = SB->port;
-			this->TableRunFunction = SB->TableRunFunction;
+		   this->address = socket_base.address;
+		   this->arch    = socket_base.arch;
+		   this->socket  = socket_base.socket;
+		   this->ip      = socket_base.ip;
+		   this->socket  = socket_base.socket;
+		   this->isRun   = socket_base.isRun;
+		   this->port    = socket_base.port;
+		   this->lenAddress = socket_base.lenAddress;
+		   this->TableRunFunction = socket_base.TableRunFunction;
 
 			return *this;
 		}
 
-		status_t wraper_send(const char *func_name, const nl::base_socket::byte_t *Packet, int32_t SizePacket)
+
+		status_t wraper_send(const std::string &func_name, const snl::base_socket::byte_t *Packet, int32_t SizePacket)
 		{
-			PacketBuffer[0] = static_cast<char>(nl::packet_header_t::wrapertable_packet);
+			PacketBuffer[0] = static_cast<char>(snl::packet_header_t::wrapertable_packet);
 
-			if (strlen(func_name) > 32)
-				return nl::status_t::error_size_func_name;
+			if (func_name.length() > 32 || func_name.empty())
+				return snl::status_t::error_size_func_name;
 
-			memcopy(PacketBuffer+1, func_name, 32);
+			memcopy(PacketBuffer+1, func_name.c_str(), 32);
 			memcopy(PacketBuffer+1+32, Packet, SizePacket);
 
 			return base_send(PacketBuffer, 1 + 32 + SizePacket);
@@ -1998,11 +2007,11 @@ namespace nl {
 
 			return status_t::error_no_select_arch;
 		}
-		nl::base_socket::byte_t *PacketBuffer = nullptr;
+		snl::base_socket::byte_t *PacketBuffer = nullptr;
 
 		void CreatePacketBuffer(const std::size_t &Size) {
 			if (PacketBuffer == nullptr && Size > 0)
-				PacketBuffer = new nl::base_socket::byte_t[Size];
+				PacketBuffer = new snl::base_socket::byte_t[Size];
 		}
 		void DeletePacketBuffer() {
 			if (PacketBuffer != nullptr) {
@@ -2013,7 +2022,7 @@ namespace nl {
 	};
 
 
-	bool TableFunction::Run(const std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(const std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer)
 	{
 		function_socket_byte_t *Func = function_socket_byte.GetFunction(Name);
 
@@ -2026,7 +2035,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(const std::string &Name, nl::client client, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(const std::string &Name, snl::client client, snl::base_socket::byte_t *Buffer)
 	{
 		function_client_byte_t *Func = function_client_byte.GetFunction(Name);
 
@@ -2038,7 +2047,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(const std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(const std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer)
 	{
 		function_server_byte_t *Func = function_server_byte.GetFunction(Name);
 
@@ -2051,7 +2060,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(const std::string &Name, nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(const std::string &Name, snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer)
 	{
 		function_server_client_byte_t *Func = function_server_client_byte.GetFunction(Name);
 
@@ -2064,7 +2073,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(const std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(const std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_socket_byte_uint32_t *Func = function_socket_byte_uint32.GetFunction(Name);
 
@@ -2076,7 +2085,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(const std::string &Name, nl::client   client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(const std::string &Name, snl::client   client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_client_byte_uint32_t *Func = function_client_byte_uint32.GetFunction(Name);
 
@@ -2088,7 +2097,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(const std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(const std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_server_byte_uint32_t *Func = function_server_byte_uint32.GetFunction(Name);
 
@@ -2101,7 +2110,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(const std::string &Name, nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(const std::string &Name, snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_server_client_byte_uint32_t *Func = function_server_client_byte_uint32.GetFunction(Name);
 
@@ -2118,7 +2127,7 @@ namespace nl {
 
 	///////////////////////////////////////////////////////////////////////////////
 
-	bool TableFunction::Run(void *point_class, const std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(void *point_class, const std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer)
 	{
 		function_socket_byte_point_t *Func = function_socket_byte_point.GetFunction(Name);
 
@@ -2131,7 +2140,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(void *point_class, const std::string &Name, nl::client client, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(void *point_class, const std::string &Name, snl::client client, snl::base_socket::byte_t *Buffer)
 	{
 		function_client_byte_point_t *Func = function_client_byte_point.GetFunction(Name);
 
@@ -2143,7 +2152,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(void *point_class, const  std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(void *point_class, const  std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer)
 	{
 		function_server_byte_point_t *Func = function_server_byte_point.GetFunction(Name);
 
@@ -2156,7 +2165,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(void *point_class, const  std::string &Name, nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer)
+	bool TableFunction::Run(void *point_class, const  std::string &Name, snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer)
 	{
 		function_server_client_byte_point_t *Func = function_server_client_byte_point.GetFunction(Name);
 
@@ -2169,7 +2178,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(void *point_class, const  std::string &Name, nl::socket_t socket, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(void *point_class, const  std::string &Name, snl::socket_t socket, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_socket_byte_uint32_point_t *Func = function_socket_byte_uint32_point.GetFunction(Name);
 
@@ -2181,7 +2190,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(void *point_class, const  std::string &Name, nl::client   client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(void *point_class, const  std::string &Name, snl::client   client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_client_byte_uint32_point_t *Func = function_client_byte_uint32_point.GetFunction(Name);
 
@@ -2193,7 +2202,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(void *point_class, const  std::string &Name, nl::server   server, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(void *point_class, const  std::string &Name, snl::server   server, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_server_byte_uint32_point_t *Func = function_server_byte_uint32_point.GetFunction(Name);
 
@@ -2206,7 +2215,7 @@ namespace nl {
 		return false;
 	}
 
-	bool TableFunction::Run(void *point_class, const std::string &Name, const nl::server   server, nl::client client, nl::base_socket::byte_t *Buffer, uint32_t SizePacket)
+	bool TableFunction::Run(void *point_class, const std::string &Name, const snl::server   server, snl::client client, snl::base_socket::byte_t *Buffer, uint32_t SizePacket)
 	{
 		function_server_client_byte_uint32_point_t *Func = function_server_client_byte_uint32_point.GetFunction(Name);
 
@@ -2218,7 +2227,7 @@ namespace nl {
 		return false;
 	}
 
-	void socket_base_t::ReadPacketTcp(void *point_class, nl::socket_t SocketFrom, socket_base_t *socket_base, socket_base_t *socket_base_server)
+	void socket_base_t::ReadPacketTcp(void *point_class, snl::socket_t SocketFrom, socket_base_t *socket_base, socket_base_t *socket_base_server)
 	{
 		if (socket_base == nullptr || socket_base_server == nullptr || SocketFrom == -1)
 		{
@@ -2231,8 +2240,8 @@ namespace nl {
 		socket_base->InitAddr();
 		socket_base_server->InitAddr();
 
-		nl::client client(1440, 0);
-		nl::server server(0, 0);
+		snl::client client(1440, 0);
+		snl::server server(0, 0);
 
 		client = socket_base;
 		server = socket_base_server;
@@ -2243,36 +2252,36 @@ namespace nl {
 		if (SizeRead == 0)
 			return;
 
-		nl::base_socket::byte_t *Data = new nl::base_socket::byte_t[SizeRead];
+		snl::base_socket::byte_t *Data = new snl::base_socket::byte_t[SizeRead];
 
 		if (Data == nullptr) {
 			printf("\nIn socket library cannot alloc memory for new client.");
-			nl::base_socket::close(SocketFrom);
+			snl::base_socket::close(SocketFrom);
 			return;
 		}
 
 		TableRunFunction->RunForBasePacket(point_class, "new", SocketFrom, server, client, nullptr, 0);
 
 		while (true) {
-			int32_t StatusPacket = nl::base_socket::recv(SocketFrom, Data, SizeRead, 0);
+			int32_t StatusPacket = snl::base_socket::recv(SocketFrom, Data, SizeRead, 0);
 
 			if (StatusPacket > 0) {
 
 				TableRunFunction->RunForBasePacket(point_class, "read", SocketFrom, server, client, Data, StatusPacket);
 
-				if (Data[0] == static_cast<byte_t>(nl::packet_header_t::wrapertable_packet))
+				if (Data[0] == static_cast<byte_t>(snl::packet_header_t::wrapertable_packet))
 				{
 					char name_function[32];
-					nl::memcopy(name_function, Data+1, 32);
+					snl::memcopy(name_function, Data+1, 32);
 					TableRunFunction->RunForBasePacket(point_class, name_function, SocketFrom, server, client, Data + 32 + 1, StatusPacket-1-32);
 				}
 
-				if (Data[0] == static_cast<byte_t>(nl::packet_header_t::wrapertable_arg_packet))
+				if (Data[0] == static_cast<byte_t>(snl::packet_header_t::wrapertable_arg_packet))
 				{
 					char name_function[32];
-					nl::memcopy(name_function, Data + 1, 32);
+					snl::memcopy(name_function, Data + 1, 32);
 				
-					nl::stream_buffer arg;
+					snl::stream_buffer arg;
 					arg.data_allbuffer_read(Data + 1 + 32);
 						
 					switch (arg.size()) {
@@ -2320,7 +2329,7 @@ namespace nl {
 		Data = nullptr;
 	}
 
-	void socket_base_t::ReadPacketUdp(void *point_class, nl::socket_t SocketFrom, socket_base_t *socket_base_server)
+	void socket_base_t::ReadPacketUdp(void *point_class, snl::socket_t SocketFrom, socket_base_t *socket_base_server)
 	{
 		if (socket_base_server == nullptr || SocketFrom == -1)
 			return;
@@ -2328,8 +2337,8 @@ namespace nl {
 		socket_base_server->InitAddr();
 
 		socket_base_t socket_base_client(0);
-		nl::server server(0, 0);
-		nl::client client(0, 0);
+		snl::server server(0, 0);
+		snl::client client(0, 0);
 
 
 		server = socket_base_server;
@@ -2337,18 +2346,18 @@ namespace nl {
 		if (SizeRead == 0)
 			return;
 
-		nl::base_socket::byte_t *Data = new nl::base_socket::byte_t[SizeRead];
+		snl::base_socket::byte_t *Data = new snl::base_socket::byte_t[SizeRead];
 
 		if (Data == nullptr) {
 			printf("\nIn socket library cannot alloc memory for new client.");
-			nl::base_socket::close(SocketFrom);
+			snl::base_socket::close(SocketFrom);
 			return;
 		}
 
 		while (true) {
 
 			socket_base_client.lenAddress = sizeof(socket_base_client.address);
-			int32_t StatusPacket = nl::base_socket::recvfrom(SocketFrom, Data, SizeRead, 0, socket_base_client.address, socket_base_client.lenAddress);
+			int32_t StatusPacket = snl::base_socket::recvfrom(SocketFrom, Data, SizeRead, 0, socket_base_client.address, socket_base_client.lenAddress);
 
 			if (StatusPacket < 1)
 				continue;
@@ -2361,10 +2370,10 @@ namespace nl {
 
 				TableRunFunction->RunForBasePacket(point_class, "read", SocketFrom, server, client, Data, StatusPacket);
 
-				if (Data[0] == static_cast<byte_t>(nl::packet_header_t::wrapertable_packet))
+				if (Data[0] == static_cast<byte_t>(snl::packet_header_t::wrapertable_packet))
 				{
 					char name_function[32];
-					nl::memcopy(name_function, Data+1, 32);
+					snl::memcopy(name_function, Data+1, 32);
 					TableRunFunction->RunForBasePacket(point_class, name_function, SocketFrom, server, client, Data+32+1, StatusPacket);
 				}
 
@@ -2384,7 +2393,7 @@ namespace nl {
 	}
 
 
-	void TableFunction::RunForBasePacket(void *class_point, std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer)
+	void TableFunction::RunForBasePacket(void *class_point, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
 	{
 		if (class_point == NULL) {
 			if (!Run(Name, SocketFrom, Data))
@@ -2409,7 +2418,7 @@ namespace nl {
 		}
 	}
 
-	void socket_base_t::RunPacket(void *point_class, std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer)
+	void socket_base_t::RunPacket(void *point_class, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
 	{
 		if (server.arch == arch_server_t::tcp_thread || server.arch == arch_server_t::udp_thread)
 			TableRunFunction->RunForBasePacket(point_class, Name, SocketFrom, server, client, Data, SizeBuffer);
@@ -2423,11 +2432,11 @@ namespace nl {
 		}
 
 		uint32_t Size;
-		nl::base_socket::byte_t *Packet;
-		nl::server server;
-		nl::client client;
+		snl::base_socket::byte_t *Packet;
+		snl::server server;
+		snl::client client;
 		std::string Name = "";
-		nl::socket_t SocketFrom = 0;
+		snl::socket_t SocketFrom = 0;
 	};
 
 	class socket_queue
@@ -2436,13 +2445,13 @@ namespace nl {
 		socket_queue();
 		~socket_queue();
 
-		nl::socket_t       Socket;
+		snl::socket_t       Socket;
 
 		bool EndData();
 		bool CreateListPacket(uint32_t Size);
 		bool ReCreatePacketList(uint32_t Size);
-		bool AddPacket(std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer);
-		bool GetPacket(std::string &Name, nl::socket_t &SocketFrom, nl::server &server, nl::client &client, nl::base_socket::byte_t *Data, uint32_t &SizeBuffer);
+		bool AddPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
+		bool GetPacket(std::string &Name, snl::socket_t &SocketFrom, snl::server &server, snl::client &client, snl::base_socket::byte_t *Data, uint32_t &SizeBuffer);
 
 		void RunAllPacket();
 
@@ -2455,7 +2464,7 @@ namespace nl {
 		ObjPacket    *ListPacket;
 		bool          isCreateListPacket;
 		uint32_t      MemoryCopy(char *Buffer, char* Obj, uint32_t PositionBuffer, uint32_t StartReadPosition, uint32_t EndReadPosition);
-		void          RunPacket(std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer);
+		void          RunPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
 	};
 
 
@@ -2512,7 +2521,7 @@ namespace nl {
 		return true;
 	}
 
-	bool socket_queue::AddPacket(std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer) {
+	bool socket_queue::AddPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer) {
 
 		if (Data == NULL || SizeBuffer == 0 || (LastIndex + 1) > SizeList)
 			return false;
@@ -2546,7 +2555,7 @@ namespace nl {
 	}
 
 
-	bool socket_queue::GetPacket(std::string &Name, nl::socket_t &SocketFrom, nl::server &server, nl::client &client, nl::base_socket::byte_t *Data, uint32_t &SizeBuffer) {
+	bool socket_queue::GetPacket(std::string &Name, snl::socket_t &SocketFrom, snl::server &server, snl::client &client, snl::base_socket::byte_t *Data, uint32_t &SizeBuffer) {
 
 		if (Data == NULL || LastIndex == 0 || ListPacket[LastIndex].Packet == NULL || GetSizeLastBuffer() == 0)
 			return false;
@@ -2588,7 +2597,7 @@ namespace nl {
 	}
 
 
-/*	void socket_queue::RunPacket(std::string Name, nl::socket_t SocketFrom, nl::server server, nl::client client, nl::base_socket::byte_t *Data, uint32_t SizeBuffer)
+/*	void socket_queue::RunPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
 	{
 
 	}*/
