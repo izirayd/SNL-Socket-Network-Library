@@ -1,1 +1,3 @@
-# socket c++ library with use std11
+# SNL - (socket nerwork library). 
+
+Use std11.
