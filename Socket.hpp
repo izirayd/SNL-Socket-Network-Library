@@ -290,7 +290,7 @@ namespace snl {
 
 		operator_add_two_arg(+);
 		operator_add_two_arg(-);
-		operator_add_two_arg(/ );
+		operator_add_two_arg(/);
 		operator_add_two_arg(*);
 		operator_add_two_arg(%);
 		operator_add_two_arg(>);
@@ -299,9 +299,9 @@ namespace snl {
 		operator_add_two_arg(<=);
 		operator_add_two_arg(==);
 		operator_add_two_arg(&&);
-		operator_add_two_arg(|| );
+		operator_add_two_arg(||);
 		operator_add_two_arg(&);
-		operator_add_two_arg(| );
+		operator_add_two_arg(|);
 		operator_add_two_arg(^);
 		operator_add_one_arg(+=, +);
 		operator_add_one_arg(-=, -);
@@ -757,16 +757,16 @@ namespace snl {
 	class ipv4
 	{
 	public:
-		ipv4() { Clear(); }
+		ipv4() { clear(); }
 		ipv4(const char *ip_src)   { operator=(ip_src); }
 		ipv4(std::string  *ip_src) { operator=(ip_src); }
 		~ipv4() = default;
 
 		ipv4& operator = (const std::string ip_src) { this->operator=(ip_src.data()); }
 		ipv4& operator = (const char *ip_src) {
-			Clear();
+			clear();
 			strcpy(ip, ip_src);
-			Compile();
+			compile();
 			return *this;
 		}
 
@@ -800,14 +800,14 @@ namespace snl {
 		}
 
 		ipv4& operator = (const ipv4 *_ip) {
-			Clear();
+			clear();
 			strcpy(ip, _ip->ip);
 			return *this;
 		}
 
 		inline uint32_t inet_addres() { return ::inet_addr(*this); }
 
-		bool HostName(const char *DomainName) {
+		bool host_name(const char *DomainName) {
 
 			if (DomainName == NULL || DomainName == nullptr || DomainName[0] == 0x00)
 				return false;
@@ -822,18 +822,18 @@ namespace snl {
 
 				addr.s_addr = *(u_long *)remoteHost->h_addr_list[0];
 
-			Clear();
+			clear();
 
 			strcpy(ip, inet_ntoa(addr));
 			return true;
 		}
 
-		inline void           Clear() { ip[0] = 0x00; }
+		inline void           clear() { ip[0] = 0x00; }
 		inline operator const char*() const { return ip; }
 		inline operator const std::string() const { return ip; }
 
 		uint8_t A, B, C, D;
-		void Compile() {
+		void compile() {
 			A = Parcer(ip, 0);
 			B = Parcer(ip, 1);
 			C = Parcer(ip, 2);
@@ -1169,8 +1169,8 @@ namespace snl {
 	class server;
 
 	typedef void(*function_socket_byte_t)(snl::socket_t, snl::base_socket::byte_t*);
-	typedef void(*function_client_byte_t)(snl::client, snl::base_socket::byte_t*);
-	typedef void(*function_server_byte_t)(snl::server, snl::base_socket::byte_t*);
+	typedef void(*function_client_byte_t)(snl::client,   snl::base_socket::byte_t*);
+	typedef void(*function_server_byte_t)(snl::server,   snl::base_socket::byte_t*);
 	typedef void(*function_server_client_byte_t)(snl::server, snl::client, snl::base_socket::byte_t *);
 
 	typedef void(*function_socket_byte_uint32_t)(snl::socket_t, snl::base_socket::byte_t *, uint32_t);
@@ -1179,7 +1179,7 @@ namespace snl {
 	typedef void(*function_server_client_byte_uint32_t)(snl::server, snl::client, snl::base_socket::byte_t *, uint32_t);
 
 	/* Для ООП так как содержит поинты на this. CLOSURE_SUPPORT является расширением поддержки ООП для борланда вплоть до XE10.2. Их фича и не
-	является стандартом, но к сожалению необходима.
+	   является стандартом, но к сожалению необходима.
 	*/
 	typedef void(CLOSURE_SUPPORT *function_socket_byte_point_t)(void *, snl::socket_t, snl::base_socket::byte_t*);
 	typedef void(CLOSURE_SUPPORT *function_client_byte_point_t)(void *, snl::client, snl::base_socket::byte_t*);
@@ -1410,9 +1410,9 @@ namespace snl {
 		void RunPacket(void *point_class, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
 
 		inline void close() { isRun = false;  snl::base_socket::close(socket); }
-		void InitAddr() { ip = inet_ntoa(address.sin_addr); port = snl::base_socket::ntohs(address.sin_port); lenAddress = sizeof(address); }
+		void init_addr() { ip = inet_ntoa(address.sin_addr); port = snl::base_socket::ntohs(address.sin_port); lenAddress = sizeof(address); }
 
-		socket_base_t& operator = (const snl::base_socket::socket_address_in _address) { address = _address; InitAddr();  return *this; }
+		socket_base_t& operator = (const snl::base_socket::socket_address_in _address) { address = _address; init_addr();  return *this; }
 		socket_base_t& operator = (const ipv4 _ip) { ip = _ip; return *this; }
 		socket_base_t& operator = (const snl::socket_t _socket) { socket = _socket; return *this; }
 
@@ -2237,8 +2237,8 @@ namespace snl {
 
 		//printf("::ReadPacketThreadStream\n");
 
-		socket_base->InitAddr();
-		socket_base_server->InitAddr();
+		socket_base->init_addr();
+		socket_base_server->init_addr();
 
 		snl::client client(1440, 0);
 		snl::server server(0, 0);
@@ -2334,7 +2334,7 @@ namespace snl {
 		if (socket_base_server == nullptr || SocketFrom == -1)
 			return;
 
-		socket_base_server->InitAddr();
+		socket_base_server->init_addr();
 
 		socket_base_t socket_base_client(0);
 		snl::server server(0, 0);
@@ -2362,7 +2362,7 @@ namespace snl {
 			if (StatusPacket < 1)
 				continue;
 
-			socket_base_client.InitAddr();
+			socket_base_client.init_addr();
 
 			client = socket_base_client;
 
@@ -2422,197 +2422,6 @@ namespace snl {
 	{
 		if (server.arch == arch_server_t::tcp_thread || server.arch == arch_server_t::udp_thread)
 			TableRunFunction->RunForBasePacket(point_class, Name, SocketFrom, server, client, Data, SizeBuffer);
-	}
-
-
-	struct ObjPacket {
-		ObjPacket() : server(0, 0), client(0, 0) {
-			Size = 0;
-			Packet = 0;
-		}
-
-		uint32_t Size;
-		snl::base_socket::byte_t *Packet;
-		snl::server server;
-		snl::client client;
-		std::string Name = "";
-		snl::socket_t SocketFrom = 0;
-	};
-
-	class socket_queue
-	{
-	public:
-		socket_queue();
-		~socket_queue();
-
-		snl::socket_t       Socket;
-
-		bool EndData();
-		bool CreateListPacket(uint32_t Size);
-		bool ReCreatePacketList(uint32_t Size);
-		bool AddPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
-		bool GetPacket(std::string &Name, snl::socket_t &SocketFrom, snl::server &server, snl::client &client, snl::base_socket::byte_t *Data, uint32_t &SizeBuffer);
-
-		void RunAllPacket();
-
-		uint32_t GetSizeLastBuffer();
-
-		TableFunction *TableRunFunction;
-
-	private:
-		uint32_t      SizeList, LastIndex;
-		ObjPacket    *ListPacket;
-		bool          isCreateListPacket;
-		uint32_t      MemoryCopy(char *Buffer, char* Obj, uint32_t PositionBuffer, uint32_t StartReadPosition, uint32_t EndReadPosition);
-		void          RunPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
-	};
-
-
-
-	socket_queue::socket_queue() {
-		SizeList = 0;
-		LastIndex = 0;
-		isCreateListPacket = false;
-	}
-
-	socket_queue::~socket_queue()
-	{
-		if (isCreateListPacket) {
-			delete[] ListPacket;
-			ListPacket = NULL;
-		}
-	}
-
-
-	bool socket_queue::EndData()
-	{
-		if (LastIndex != 0)
-			return true;
-
-		return false;
-	}
-
-	bool socket_queue::CreateListPacket(uint32_t Size) {
-
-		if (isCreateListPacket == true)
-			return false;
-
-		isCreateListPacket = true;
-
-		ListPacket = new ObjPacket[Size];
-		SizeList = Size;
-
-		return true;
-	}
-
-	bool socket_queue::ReCreatePacketList(uint32_t Size) {
-
-		if (isCreateListPacket)
-		{
-			delete[] ListPacket;
-			ListPacket = NULL;
-		}
-
-		SizeList = 0;
-		LastIndex = 0;
-		isCreateListPacket = false;
-
-		CreateListPacket(Size);
-		return true;
-	}
-
-	bool socket_queue::AddPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer) {
-
-		if (Data == NULL || SizeBuffer == 0 || (LastIndex + 1) > SizeList)
-			return false;
-
-		std::mutex Mutex;
-
-		Mutex.lock();
-		LastIndex++;
-
-		ListPacket[LastIndex].Packet = new char[SizeBuffer];
-		ListPacket[LastIndex].Size = SizeBuffer;
-		MemoryCopy(ListPacket[LastIndex].Packet, Data, 0, 0, SizeBuffer);
-
-		ListPacket[LastIndex].Name = Name;
-		ListPacket[LastIndex].SocketFrom = SocketFrom;
-		ListPacket[LastIndex].server = server;
-		ListPacket[LastIndex].client = client;
-
-
-		Mutex.unlock();
-
-		return true;
-	}
-
-	uint32_t socket_queue::GetSizeLastBuffer() {
-
-		if (LastIndex == 0)
-			return 0;
-
-		return ListPacket[LastIndex].Size;
-	}
-
-
-	bool socket_queue::GetPacket(std::string &Name, snl::socket_t &SocketFrom, snl::server &server, snl::client &client, snl::base_socket::byte_t *Data, uint32_t &SizeBuffer) {
-
-		if (Data == NULL || LastIndex == 0 || ListPacket[LastIndex].Packet == NULL || GetSizeLastBuffer() == 0)
-			return false;
-
-		std::mutex  Mutex;
-		Mutex.lock();
-
-		MemoryCopy(Data, ListPacket[LastIndex].Packet, 0, 0, ListPacket[LastIndex].Size);
-		SizeBuffer = ListPacket[LastIndex].Size;
-
-		delete[] ListPacket[LastIndex].Packet;
-
-		ListPacket[LastIndex].Packet = NULL;
-		ListPacket[LastIndex].Size = 0;
-
-		SocketFrom = ListPacket[LastIndex].SocketFrom;
-		server = ListPacket[LastIndex].server;
-		client = ListPacket[LastIndex].client;
-		Name = ListPacket[LastIndex].Name;
-
-		LastIndex--;
-
-		Mutex.unlock();
-
-		return true;
-	}
-
-	uint32_t socket_queue::MemoryCopy(char *Buffer, char* Obj, uint32_t PositionBuffer, uint32_t StartReadPosition, uint32_t EndReadPosition)
-	{
-
-		uint32_t w = PositionBuffer;
-		for (uint32_t i = StartReadPosition; i < EndReadPosition; i++)
-		{
-			Buffer[w] = Obj[i];
-			w++;
-		}
-
-		return w;
-	}
-
-
-/*	void socket_queue::RunPacket(std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
-	{
-
-	}*/
-
-	void socket_queue::RunAllPacket() {
-
-		while (this->EndData())
-		{
-			char *BufferPacket = new char[GetSizeLastBuffer()];
-
-			//uint32_t Size;
-			//GetPacket(BufferPacket, Size);
-			//RunPacket(BufferPacket, Socket, ServerClient);
-			delete[] BufferPacket;
-		}
 	}
 
 }
