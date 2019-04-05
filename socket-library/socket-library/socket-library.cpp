@@ -265,7 +265,7 @@ int main()
 
 				std::chrono::time_point<std::chrono::steady_clock> start = std::chrono::high_resolution_clock::now();
 
-				client.send("mouse_position", pos.x, pos.y, start);
+				//client.send("mouse_position", pos.x, pos.y, start);
 
 				last_pos.x = pos.x;
 				last_pos.y = pos.y;

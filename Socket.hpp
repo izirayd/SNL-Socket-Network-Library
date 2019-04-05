@@ -1,5 +1,5 @@
 ﻿/*
-Socket snl 2018. Version 0.4
+Socket snl 2019. Version 0.5
 
 Socket network library - MIT License.
 
@@ -25,7 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 //#pragma once
 
 #define socket_major 0
-#define socket_minor 4
+#define socket_minor 5
 
 // socket network library
 namespace snl {
@@ -564,7 +564,7 @@ namespace snl {
 
 		void data_allbuffer(char *Buffer)
 		{
-			int32_t size_list = this->size();
+			int32_t size_list = (int32_t) this->size();
 			snl::memory_cast(Buffer, &size_list, sizeof(int32_t));
 			Buffer += sizeof(int32_t);
 			for (auto &it : *this) {
@@ -577,7 +577,7 @@ namespace snl {
 
 		void data_allbuffer_read_in_end(char *Buffer, int32_t max_size)
 		{
-			int32_t size_list = this->size();
+			int32_t size_list = (int32_t) this->size();
 
 			int32_t size = 0;
 			memcpy(&size, Buffer, sizeof(int32_t));
@@ -962,9 +962,9 @@ namespace snl {
 		ipv4() { clear(); }
 		ipv4(const char *ip_src) { operator=(ip_src); }
 		ipv4(std::string  *ip_src) { operator=(ip_src); }
-		~ipv4() = default;
+//		~ipv4() = default;
 
-		ipv4& operator = (const std::string ip_src) { this->operator=(ip_src.data()); }
+		ipv4& operator = (const std::string ip_src) { this->operator=(ip_src.data()); return *this; }
 		ipv4& operator = (const char *ip_src) {
 			clear();
 			strcpy(ip, ip_src);
@@ -1302,7 +1302,7 @@ namespace snl {
 		}
 
 		inline snl::socket_t accept(snl::socket_t socket, snl::base_socket::socket_address_in &address, snl::base_socket::socket_address_len &len) {
-			init_socket();
+			//init_socket();
 			return ::accept(socket, (struct sockaddr*)&address, &len);
 		}
 
@@ -1439,7 +1439,7 @@ namespace snl {
 
 		~TableFunction() = default;
 
-		void RunForBasePacket(void *class_point, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
+		void RunForBasePacket(void *class_point, const std::string &Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
 
 		inline void Add(const std::string &Name, const  function_socket_byte_t                     func) { function_socket_byte.push_back({ Name, func }); }
 		inline void Add(const std::string &Name, const  function_client_byte_t                     func) { function_client_byte.push_back({ Name, func }); }
@@ -1522,6 +1522,7 @@ namespace snl {
 		error_connect,
 		error_no_send,
 		error_size_func_name,
+		error_size_buffer,
 		error_null_send
 	};
 
@@ -1558,9 +1559,9 @@ namespace snl {
 
 		void ReadPacketTcp(void *point_class, snl::socket_t SocketFrom, socket_base_t *socket_base_client, socket_base_t *socket_base_server);
 		void ReadPacketUdp(void *point_class, snl::socket_t SocketFrom, socket_base_t *socket_base_server);
-		void RunPacket(void *point_class, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
+		void RunPacket(void *point_class, const std::string &sName, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer);
 
-		inline void close() { isRun = false;  snl::base_socket::close(socket); }
+		inline void close(bool NoEnd = false) { isNoEnd = false; isRun = false;  snl::base_socket::close(socket); }
 		void init_addr() { ip = inet_ntoa(address.sin_addr); port = snl::base_socket::ntohs_(address.sin_port); lenAddress = sizeof(address); }
 
 		socket_base_t& operator = (const snl::base_socket::socket_address_in _address) { address = _address; init_addr();  return *this; }
@@ -1571,18 +1572,20 @@ namespace snl {
 
 		inline void flag_argumen_clear() {	snl::clear_flag(flag_argument); 	}
 
-		socket_base_t& operator += (const snl::argument_flags_t &flags_argument) {  snl::add_flag(flag_argument, flags_argument);   return *this; }
-		socket_base_t& operator -= (const snl::argument_flags_t &flags_argument) {  snl::del_flag(flag_argument, flags_argument);   return *this; }
-		bool           operator == (const snl::argument_flags_t &flags_argument) {  return snl::check_flag(flag_argument, flags_argument);  }
-		bool           operator == (const socket_base_t &socket_base_obj) { return this->socket == socket_base_obj.socket; }
+		socket_base_t& operator += (const snl::argument_flags_t &flags_argument)  {  snl::add_flag(flag_argument, flags_argument);   return *this; }
+		socket_base_t& operator -= (const snl::argument_flags_t &flags_argument)  {  snl::del_flag(flag_argument, flags_argument);   return *this; }
+		bool           operator == (const snl::argument_flags_t &flags_argument)  {  return snl::check_flag(flag_argument, flags_argument);  }
+		bool           operator == (const socket_base_t         &socket_base_obj) {  return this->socket == socket_base_obj.socket; }
 
 		snl::flag8_t  flag_argument;
 
-		bool          isRun       = true;
-		snl::port_t   port        = 0;
-		snl::socket_t socket      = 0;
-		snl::ipv4     ip          = "0.0.0.0";
-		bool          disable_snl = false;
+		bool          isNoEnd      = false;
+		bool          isRun        = true;
+		snl::port_t   port         = 0;
+		snl::socket_t socket       = 0;
+		snl::ipv4     ip           = "0.0.0.0";
+		bool          disable_snl  = false;
+		int32_t       send_flags   = 0;
 
 		snl::base_socket::socket_address_in  address;
 		snl::base_socket::socket_address_len lenAddress = 0;
@@ -1708,7 +1711,6 @@ namespace snl {
 
 		server& operator = (const function_socket_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		server& operator = (const function_client_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
-		server& operator = (const function_client_json_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		server& operator = (const function_server_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		server& operator = (const function_server_client_byte_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		server& operator = (const function_socket_byte_uint32_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
@@ -1725,22 +1727,34 @@ namespace snl {
 		server& operator = (const function_server_byte_uint32_point_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		server& operator = (const function_server_client_byte_uint32_point_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 
-		bool           operator == (const server &server_obj) { return this->socket == server_obj.socket; }
-		bool           operator == (server server_obj) { return this->socket == server_obj.socket; }
+		server& operator = (const function_socket_json_t        Func)       { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_client_json_t        Func)       { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_json_t        Func)       { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_client_json_t Func)       { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_socket_json_point_t  Func)       { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_client_json_point_t  Func)       { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_json_point_t  Func)       { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		server& operator = (const function_server_client_json_point_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 
-		template<typename func_t>
+
+
+		bool           operator == (const server &server_obj) { return this->socket == server_obj.socket; }
+		bool           operator == (server server_obj)        { return this->socket == server_obj.socket; }
+
+	    template<typename func_t>
 		server& operator = (const func_t &Func) { FunctionInvoke.AddFunction(SelectFunction, Func, this->flag_argument);	return *this; }
 
 		server& operator     = (socket_base_t *SB) {
 
-			this->address    = SB->address;
-			this->arch       = SB->arch;
-			this->socket     = SB->socket;
-			this->ip         = SB->ip;
-			this->socket     = SB->socket;
-			this->isRun      = SB->isRun;
-			this->lenAddress = SB->lenAddress;
-			this->port       = SB->port;
+			this->address          = SB->address;
+			this->arch             = SB->arch;
+			this->socket           = SB->socket;
+			this->ip               = SB->ip;
+			this->socket           = SB->socket;
+			this->isRun            = SB->isRun;
+			this->lenAddress       = SB->lenAddress;
+			this->port             = SB->port;
+			this->send_flags       = SB->send_flags;
 
 			this->TableRunFunction = SB->TableRunFunction;
 			this->FunctionInvoke   = SB->FunctionInvoke;
@@ -1750,14 +1764,15 @@ namespace snl {
 
 		server& operator     = (const socket_base_t &SB) {
 
-			this->address    = SB.address;
-			this->arch       = SB.arch;
-			this->socket     = SB.socket;
-			this->ip         = SB.ip;
-			this->socket     = SB.socket;
-			this->isRun      = SB.isRun;
-			this->lenAddress = SB.lenAddress;
-			this->port       = SB.port;
+			this->address          = SB.address;
+			this->arch             = SB.arch;
+			this->socket           = SB.socket;
+			this->ip               = SB.ip;
+			this->socket           = SB.socket;
+			this->isRun            = SB.isRun;
+			this->lenAddress       = SB.lenAddress;
+			this->port             = SB.port;
+			this->send_flags       = SB.send_flags;
 
 			this->TableRunFunction = SB.TableRunFunction;
 			this->FunctionInvoke   = SB.FunctionInvoke;
@@ -1767,14 +1782,15 @@ namespace snl {
 
 		server& operator     = (const socket_base_t *SB) {
 
-			this->address    = SB->address;
-			this->arch       = SB->arch;
-			this->socket     = SB->socket;
-			this->ip         = SB->ip;
-			this->socket     = SB->socket;
-			this->isRun      = SB->isRun;
-			this->lenAddress = SB->lenAddress;
-			this->port       = SB->port;
+			this->address          = SB->address;
+			this->arch             = SB->arch;
+			this->socket           = SB->socket;
+			this->ip               = SB->ip;
+			this->socket           = SB->socket;
+			this->isRun            = SB->isRun;
+			this->lenAddress       = SB->lenAddress;
+			this->port             = SB->port;
+			this->send_flags       = SB->send_flags;
 
 			this->TableRunFunction = SB->TableRunFunction;
 			this->FunctionInvoke   = SB->FunctionInvoke;
@@ -1861,8 +1877,8 @@ namespace snl {
 			socket_base_t *server = new socket_base_t(0);
 
 			server->address = this->address;
-			server->socket = this->socket;
-			server->arch = this->arch;
+			server->socket  = this->socket;
+			server->arch    = this->arch;
 
 
 			if (arch == arch_server_t::tcp_thread)
@@ -1870,8 +1886,11 @@ namespace snl {
 				while (true)
 				{
 					socket_base_t *client = new socket_base_t(0);
+
 					client->lenAddress = sizeof(client->address);
-					client->arch = this->arch;
+					client->arch       = this->arch;
+
+					client->send_flags = send_flags;
 
 					client->socket = snl::base_socket::accept(socket, client->address, client->lenAddress);
 
@@ -1991,6 +2010,7 @@ namespace snl {
 				return status_t::error_create_socket;
 
 			snl::base_socket::create_address(address, family, ipServer, portServer);
+
 			int32_t
 				status = snl::base_socket::connect(socket, address, lenAddress);
 
@@ -2031,6 +2051,7 @@ namespace snl {
 
 			return status_t::error_no_select_arch;
 		}
+
 		status_t run(type_blocked_t type = type_blocked_t::block)
 		{
 			if (type == type_blocked_t::block)
@@ -2069,6 +2090,11 @@ namespace snl {
 
 			if (func_name.length() > 32 || func_name.empty())
 				return snl::status_t::error_size_func_name;
+
+			if (json_script_str.length() > (this->SizePacketBuffer - 1 - 32)) {
+				printf("Error send, packet > packet buffer\n");
+				return snl::status_t::error_size_buffer;
+			}
 
 			memcopy(PacketBuffer + 1, func_name.c_str(), func_name.length());
 
@@ -2121,16 +2147,13 @@ namespace snl {
 		uint64_t speed_byte_sum   = 0;
 		uint32_t count_packet_sec = 0;
 		std::chrono::duration<double, std::milli> speed_byte_timer = std::chrono::milliseconds(0);
-		std::chrono::steady_clock::time_point timer_send = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point     timer_send       = std::chrono::steady_clock::now();
 
 		public:
 		const uint64_t get_send_byte_sec()	{ return speed_byte_sec; }
 		const uint64_t get_send_kbyte_sec()	{ return speed_byte_sec / 1024; }
 		const uint64_t get_send_mbyte_sec()	{ return speed_byte_sec / 1024 / 1024; }
 		const uint64_t get_send_gbyte_sec()	{ return speed_byte_sec / 1024 / 1024 / 1024; }
-
-		int32_t send_flags = 0;
-
 
 		status_t base_send(const snl::base_socket::byte_t *Packet, const std::size_t &SizePacket)
 		{
@@ -2151,11 +2174,11 @@ namespace snl {
 			timer_send        = now;
 			
 			if (arch == arch_server_t::tcp_thread)
-				if (snl::base_socket::send(socket, Packet, SizePacket, send_flags) == socket_error)
+				if (snl::base_socket::send(socket, Packet, (int32_t) SizePacket, send_flags) == socket_error)
 					return status_t::error_no_send;
 
 			if (arch == arch_server_t::udp_thread)
-				if (snl::base_socket::send(socket, Packet, SizePacket, send_flags, address, lenAddress) == socket_error)
+				if (snl::base_socket::send(socket, Packet, (int32_t) SizePacket, send_flags, address, lenAddress) == socket_error)
 					return status_t::error_no_send;
 
 			return status_t::success;
@@ -2169,7 +2192,6 @@ namespace snl {
 
 		inline client& operator = (const function_socket_byte_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		inline client& operator = (const function_client_byte_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
-		inline client& operator = (const function_client_json_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		inline client& operator = (const function_server_byte_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		inline client& operator = (const function_server_client_byte_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		inline client& operator = (const function_socket_byte_uint32_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
@@ -2186,6 +2208,16 @@ namespace snl {
 		inline client& operator = (const function_server_byte_uint32_point_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 		inline client& operator = (const function_server_client_byte_uint32_point_t &Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
 
+
+		client& operator = (const function_socket_json_t        Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_client_json_t        Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_json_t        Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_client_json_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_socket_json_point_t  Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_client_json_point_t  Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_json_point_t  Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+		client& operator = (const function_server_client_json_point_t Func) { TableRunFunction.Add(SelectFunction, Func);	return *this; }
+
 		bool           operator == (const client &client_obj)       { return this->socket == client_obj.socket; }
 		bool           operator == (const client &client_obj) const { return this->socket == client_obj.socket; }
 
@@ -2196,47 +2228,52 @@ namespace snl {
 		client& operator = (const func_t &Func) { FunctionInvoke.AddFunction(SelectFunction, Func, flag_argument);	return *this; }
 
 		inline client& operator = (const snl::socket_base_t *socket_base) {
-			this->address = socket_base->address;
-			this->arch = socket_base->arch;
-			this->socket = socket_base->socket;
-			this->ip = socket_base->ip;
-			this->socket = socket_base->socket;
-			this->isRun = socket_base->isRun;
-			this->port = socket_base->port;
-			this->lenAddress = socket_base->lenAddress;
+
+			this->address          = socket_base->address;
+			this->arch             = socket_base->arch;
+			this->socket           = socket_base->socket;
+			this->ip               = socket_base->ip;
+			this->socket           = socket_base->socket;
+			this->isRun            = socket_base->isRun;
+			this->port             = socket_base->port;
+			this->lenAddress       = socket_base->lenAddress;
 			this->TableRunFunction = socket_base->TableRunFunction;
-			this->FunctionInvoke = socket_base->FunctionInvoke;
+			this->FunctionInvoke   = socket_base->FunctionInvoke;
+			this->send_flags       = socket_base->send_flags;
 
 			return *this;
 		}
 
 		client& operator = (snl::socket_base_t *socket_base) {
-			this->address = socket_base->address;
-			this->arch = socket_base->arch;
-			this->socket = socket_base->socket;
-			this->ip = socket_base->ip;
-			this->socket = socket_base->socket;
-			this->isRun = socket_base->isRun;
-			this->port = socket_base->port;
-			this->lenAddress = socket_base->lenAddress;
+
+			this->address          = socket_base->address;
+			this->arch             = socket_base->arch;
+			this->socket           = socket_base->socket;
+			this->ip               = socket_base->ip;
+			this->socket           = socket_base->socket;
+			this->isRun            = socket_base->isRun;
+			this->port             = socket_base->port;
+			this->lenAddress       = socket_base->lenAddress;
 			this->TableRunFunction = socket_base->TableRunFunction;
-			this->FunctionInvoke = socket_base->FunctionInvoke;
+			this->FunctionInvoke   = socket_base->FunctionInvoke;
+			this->send_flags       = socket_base->send_flags;
 
 			return *this;
 		}
 
 		client& operator = (const snl::socket_base_t &socket_base) {
 
-			this->address = socket_base.address;
-			this->arch = socket_base.arch;
-			this->socket = socket_base.socket;
-			this->ip = socket_base.ip;
-			this->socket = socket_base.socket;
-			this->isRun = socket_base.isRun;
-			this->port = socket_base.port;
-			this->lenAddress = socket_base.lenAddress;
+			this->address          = socket_base.address;
+			this->arch             = socket_base.arch;
+			this->socket           = socket_base.socket;
+			this->ip               = socket_base.ip;
+			this->socket           = socket_base.socket;
+			this->isRun            = socket_base.isRun;
+			this->port             = socket_base.port;
+			this->lenAddress       = socket_base.lenAddress;
 			this->TableRunFunction = socket_base.TableRunFunction;
-			this->FunctionInvoke = socket_base.FunctionInvoke;
+			this->FunctionInvoke   = socket_base.FunctionInvoke;
+			this->send_flags       = socket_base.send_flags;
 
 			return *this;
 		}
@@ -2270,9 +2307,12 @@ namespace snl {
 				client->address = this->address;
 				server->address = this->address;
 
-				client->socket = this->socket;
-				client->arch = arch;
-				server->arch = arch;
+				client->socket  = this->socket;
+				client->arch    = arch;
+				server->arch    = arch;
+
+				client->send_flags = send_flags;
+
 
 				std::thread threadclient(&socket_base_t::ReadPacketTcp, this, this->point_class, socket, client, server);
 				threadclient.join();
@@ -2287,6 +2327,8 @@ namespace snl {
 
 				client_reader_packet->socket = this->socket;
 				client_reader_packet->arch   = arch;
+
+				// send_flags?
 
 				ReadPacketUdp(this->point_class, socket, client_reader_packet);
 
@@ -2578,7 +2620,7 @@ namespace snl {
 
 			if (StatusPacket > 0) {
 
-				//printf("new packet\n");
+				//printf("StatusPacket: %d SizeRead: %u\n", StatusPacket, SizeRead);
 
 				TableRunFunction.RunForBasePacket(point_class, "read", SocketFrom, server, client, Data, StatusPacket);
 
@@ -2651,12 +2693,13 @@ namespace snl {
 				break;
 			}
 
-			if (StatusPacket <= 0)
+			if (StatusPacket <= 0 && !isNoEnd)
 			{
 				TableRunFunction.RunForBasePacket(point_class, "end", SocketFrom, server, client, nullptr, 0);
 				break;
 			}
 		}
+
 
 		delete socket_base;
 		socket_base = nullptr;
@@ -2717,7 +2760,7 @@ namespace snl {
 					TableRunFunction.RunForBasePacket(point_class, name_function, SocketFrom, server, client, Data + 32 + 1, StatusPacket);
 				}
 
-				if (Data[0] == static_cast<byte_t>(snl::packet_header_t::wrapertable_arg_packet))
+				/*if (Data[0] == static_cast<byte_t>(snl::packet_header_t::wrapertable_arg_packet))
 				{
 					char name_function[32];
 					snl::memcopy(name_function, Data + 1, 32);
@@ -2756,7 +2799,7 @@ namespace snl {
 					default:
 						break;
 					}
-				}
+				}*/
 
 			}
 
@@ -2774,7 +2817,7 @@ namespace snl {
 	}
 
 
-	void TableFunction::RunForBasePacket(void *class_point, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
+	void TableFunction::RunForBasePacket(void *class_point, const std::string &Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
 	{		
 		if (!Run(Name, SocketFrom, Data))
 			if (!Run(Name, SocketFrom, Data, SizeBuffer))
@@ -2792,7 +2835,16 @@ namespace snl {
 
 												if (Func != nullptr) {
 													Data[SizeBuffer] = 0x00;
-													json j = json::parse(Data, Data + SizeBuffer);
+
+													json j;
+
+													try		{
+													   j = json::parse(Data, Data + SizeBuffer);		 
+													}
+													catch (const json::parse_error&)	{
+														return;
+													}
+
 													((*Func)(client, j));
 												}
 											}
@@ -2802,7 +2854,15 @@ namespace snl {
 
 												if (Func != nullptr) {
 													Data[SizeBuffer] = 0x00;
-													json j = json::parse(Data, Data + SizeBuffer);
+
+													json j;
+
+													try {
+														j = json::parse(Data, Data + SizeBuffer);
+													}
+													catch (const json::parse_error&) {
+														return;
+													}
 													((*Func)(SocketFrom, j));
 												}
 											}
@@ -2813,7 +2873,14 @@ namespace snl {
 
 												if (Func != nullptr) {
 													Data[SizeBuffer] = 0x00;
-													json j = json::parse(Data, Data + SizeBuffer);
+													json j;
+
+													try	{
+														j = json::parse(Data, Data + SizeBuffer);
+													}
+													catch (const json::parse_error&) {
+														return;
+													}
 													((*Func)(server, j));
 												}
 											}
@@ -2823,7 +2890,15 @@ namespace snl {
 
 												if (Func != nullptr) {
 													Data[SizeBuffer] = 0x00;
-													json j = json::parse(Data, Data + SizeBuffer);
+													json j;
+
+													try	{
+														j = json::parse(Data, Data + SizeBuffer);
+													}
+													catch (const json::parse_error&) {
+														return;
+													}
+
 													((*Func)(server, client, j));
 												}
 											}
@@ -2848,7 +2923,15 @@ namespace snl {
 
 													if (Func != nullptr) {
 														Data[SizeBuffer] = 0x00;
-														json j = json::parse(Data, Data + SizeBuffer);
+														json j;
+
+														try	{
+															j = json::parse(Data, Data + SizeBuffer);
+														}
+														catch (const json::parse_error&) {
+															return;
+														}
+
 														((*Func)(class_point, client, j));
 													}
 												}
@@ -2858,7 +2941,16 @@ namespace snl {
 
 													if (Func != nullptr) {
 														Data[SizeBuffer] = 0x00;
-														json j = json::parse(Data, Data + SizeBuffer);
+
+														json j;
+														try		{
+															j = json::parse(Data, Data + SizeBuffer);
+														}
+														catch (const json::parse_error&)
+														{
+															return;
+														}
+
 														((*Func)(class_point, SocketFrom, j));
 													}
 												}
@@ -2869,7 +2961,16 @@ namespace snl {
 
 													if (Func != nullptr) {
 														Data[SizeBuffer] = 0x00;
-														json j = json::parse(Data, Data + SizeBuffer);
+
+														json j;
+														try	{
+															j = json::parse(Data, Data + SizeBuffer);
+														}
+														catch (const json::parse_error&)
+														{
+															return;
+														}
+
 														((*Func)(class_point, server, j));
 													}
 												}
@@ -2879,7 +2980,17 @@ namespace snl {
 
 													if (Func != nullptr) {
 														Data[SizeBuffer] = 0x00;
-														json j = json::parse(Data, Data + SizeBuffer);
+
+														json j;
+														try
+														{
+															j = json::parse(Data, Data + SizeBuffer);
+														}
+														catch (const json::parse_error&)
+														{
+															return;
+														}
+
 														((*Func)(class_point, server, client, j));
 													}
 												}
@@ -2888,7 +2999,7 @@ namespace snl {
 		}
 	}
 
-	void socket_base_t::RunPacket(void *point_class, std::string Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
+	void socket_base_t::RunPacket(void *point_class, const std::string &Name, snl::socket_t SocketFrom, snl::server server, snl::client client, snl::base_socket::byte_t *Data, uint32_t SizeBuffer)
 	{
 		if (server.arch == arch_server_t::tcp_thread || server.arch == arch_server_t::udp_thread)
 			TableRunFunction.RunForBasePacket(point_class, Name, SocketFrom, server, client, Data, SizeBuffer);
