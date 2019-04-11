@@ -37,15 +37,15 @@ int main()
 	server["read"] = ReadPacket;
 	client["read"] = ReadPacket;
 
-	server.Create("127.0.0.1", 500, std::arch_server_t::tcp_thread);
-	server.Run(std::type_blocked_t::non_block);
+	server.create("127.0.0.1", 500, std::arch_server_t::tcp_thread);
+	server.run(std::type_blocked_t::non_block);
 
-	client.Connect("127.0.0.1", 500, std::arch_server_t::tcp_thread);
-	client.Run(std::type_blocked_t::non_block);
+	client.connect("127.0.0.1", 500, std::arch_server_t::tcp_thread);
+	client.run(std::type_blocked_t::non_block);
 
 	for (;;) {
 		start = std::chrono::high_resolution_clock::now();
-		client.Send("Hello, World!\0", 15);
+		client.send("Hello, World!\0", 15);
 
 		std::this_thread::sleep_for(1ms);
 	}
